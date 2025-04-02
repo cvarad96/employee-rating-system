@@ -1,0 +1,360 @@
+/**
+ * Custom styles for the Employee Rating System
+ */
+
+/* Global styles */
+:root {
+    --primary-color: #4e73df;
+    --secondary-color: #858796;
+    --success-color: #1cc88a;
+    --danger-color: #e74a3b;
+    --warning-color: #f6c23e;
+    --info-color: #36b9cc;
+}
+
+body {
+    background-color: #f8f9fc;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Fix for any potential header spacing issues */
+header.navbar {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Dashboard cards */
+.card {
+    border: none;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.card .card-header {
+    font-weight: 700;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid var(--primary-color) !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid var(--success-color) !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid var(--info-color) !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid var(--warning-color) !important;
+}
+
+.border-left-danger {
+    border-left: 0.25rem solid var(--danger-color) !important;
+}
+
+/* Tables */
+.table th {
+    background-color: #f8f9fc;
+    font-weight: 700;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(78, 115, 223, 0.05);
+}
+
+/* Navigation */
+.sidebar .nav-item .nav-link {
+    padding: 0.75rem 1rem;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.sidebar .nav-item .nav-link i {
+    margin-right: 0.25rem;
+}
+
+.sidebar .nav-item .nav-link.active {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.sidebar .nav-item .nav-link:hover {
+    color: var(--primary-color);
+}
+
+.sidebar-heading {
+    padding: 0 1rem;
+    font-weight: 800;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+}
+
+/* Buttons */
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Star ratings */
+.star-rating {
+    display: inline-block;
+}
+
+.star-rating i {
+    color: #f6c23e;
+}
+
+.star-rating-input {
+    display: flex;
+    align-items: center;
+}
+
+.star-rating-input .form-check {
+    margin-right: 0.5rem;
+}
+
+/* Progress bars */
+.progress {
+    height: 1rem;
+    border-radius: 0.25rem;
+}
+
+.progress-bar {
+    height: 100%;
+}
+
+/* Badges */
+.badge {
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Login page */
+.form-signin {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+/* Media queries for mobile responsiveness */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        position: relative;
+        padding-top: 0;
+    }
+    
+    .content {
+        margin-left: 0;
+        padding-top: 20px;
+    }
+    
+    .card {
+        margin-bottom: 20px;
+    }
+    
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+    }
+}
+
+/* Utility classes */
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.text-xs {
+    font-size: 0.7rem;
+}
+
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fadeIn {
+    animation: fadeIn 0.5s;
+}
+
+/* Notification badge on navbar */
+.position-relative .badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(25%, -25%);
+}
+
+/* Improve mobile navigation */
+@media (max-width: 767.98px) {
+    .navbar .navbar-toggler {
+        position: absolute;
+        right: 1rem;
+        top: 0.5rem;
+    }
+    
+    .navbar-brand {
+        margin-right: 3rem;
+    }
+}
+
+/* Login page specific styles */
+body.login-page {
+    background-color: #4e73df;
+    background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+    background-size: cover;
+}
+
+/* Star rating mobile optimization */
+@media (max-width: 767px) {
+    .rating-group {
+        display: flex;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+    }
+    
+    .rating-group .form-check {
+        padding: 0;
+        margin: 0 !important;
+    }
+    
+    .rating-group label {
+        padding: 0;
+        margin: 0 2px !important;
+    }
+    
+    .rating-group .bi {
+        font-size: 0.9rem;
+    }
+    
+    /* Make stars container take less space */
+    .list-group-item {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    /* Stack the label and stars vertically on very small screens */
+    @media (max-width: 360px) {
+        .list-group-item .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+        
+        .rating-group {
+            margin-top: 0.25rem;
+        }
+    }
+}
+
+/* Make sure form check inputs don't break layout */
+.form-check-input.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Add these styles to ensure mobile compatibility */
+
+/* Star rating optimization for mobile devices */
+.mobile-rating-item {
+    padding: 8px 10px;
+}
+
+.mobile-rating-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.parameter-name {
+    flex: 1;
+    min-width: 0;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    margin-right: 10px;
+}
+
+.mobile-stars {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.star-item {
+    padding: 0;
+    margin: 0 !important;
+}
+
+.star-label {
+    margin: 0 1px !important;
+    padding: 0;
+}
+
+/* Adjust for various screen sizes */
+@media (max-width: 576px) {
+    .mobile-stars .bi {
+        font-size: 15px;
+    }
+
+    .parameter-name {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 420px) {
+    .mobile-stars .bi {
+        font-size: 14px;
+    }
+
+    .parameter-name {
+        font-size: 13px;
+        max-width: 50%;
+    }
+
+    .star-label {
+        margin: 0 !important;
+    }
+}
+
+@media (max-width: 350px) {
+    .mobile-stars .bi {
+        font-size: 12px;
+    }
+
+    .parameter-name {
+        font-size: 12px;
+    }
+}

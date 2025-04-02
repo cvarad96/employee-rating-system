@@ -1,0 +1,32 @@
+# Configuration files with sensitive data
+config/config.php.original
+config/config.php.local
+config/*.bak
+
+# Log files
+logs/*.log
+logs/emails/*
+
+# User uploaded content
+uploads/*
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
