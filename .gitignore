@@ -3,6 +3,9 @@ config/config.php.original
 config/config.php.local
 config/*.bak
 
+# Ignore actual configuration file
+/config/config.php
+
 # Log files
 logs/*.log
 logs/emails/*

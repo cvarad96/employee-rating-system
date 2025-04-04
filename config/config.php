@@ -1,6 +1,8 @@
 <?php
 /**
- * Application Configuration
+ * Application Configuration Template
+ * 
+ * Rename this file to config.php and update with your settings
  */
 
 // Application name
@@ -9,21 +11,21 @@ define('APP_NAME', 'Employee Rating System');
 // Application version
 define('APP_VERSION', '1.0.0');
 
-// Application URL
-define('APP_URL', 'http://172.31.254.19/employee-rating-system');
+// Application URL (Set this to your server URL)
+define('APP_URL', 'http://localhost/employee-rating-system');
 
-// Database credentials
 // Database credentials
 define('DB_HOST', 'localhost');
 define('DB_USER', 'eratinguser');
 define('DB_PASS', 'choose_a_secure_password');
 define('DB_NAME', 'employee_rating_system');
 
-define('MAIL_HOST', 'wifisoft.mail.pairserver.com'); // Change to your actual SMTP server (e.g. smtp.gmail.com)
+// Mail configuration
+define('MAIL_HOST', 'your-smtp-server.com'); 
 define('MAIL_PORT', 465);
-define('MAIL_USERNAME', 'alert@indionetworks.com'); // Change to your actual email
-define('MAIL_PASSWORD', 'wifi123#'); // Change to your actual password
-define('MAIL_FROM_ADDRESS', 'alert@indionetworks.com'); // Change to your actual email
+define('MAIL_USERNAME', 'system@example.com');
+define('MAIL_PASSWORD', 'your-email-password');
+define('MAIL_FROM_ADDRESS', 'system@example.com');
 define('MAIL_FROM_NAME', APP_NAME);
 define('MAIL_DEBUG', false); 
 
@@ -31,7 +33,7 @@ define('MAIL_DEBUG', false);
 define('SESSION_LIFETIME', 7200); // 2 hours in seconds
 
 // Timezone
-date_default_timezone_set('Asia/Kolkata'); // Set to your timezone (e.g., Asia/Kolkata for Pune)
+date_default_timezone_set('Asia/Kolkata'); // Set to your timezone
 
 // Error reporting
 ini_set('display_errors', 1);
