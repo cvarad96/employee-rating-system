@@ -130,20 +130,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     foreach ($parameterIds as $index => $parameterId) {
         $ratingKey = "rating_" . $parameterId;
         $commentKey = "comment_" . $parameterId;
-        
-        if (isset($_POST[$ratingKey]) && !empty($_POST[$ratingKey])) {
+
+        if (isset($_POST[$ratingKey])) {
+            $ratingValue = intval($_POST[$ratingKey]);
+            $comment = isset($_POST[$commentKey]) ? trim($_POST[$commentKey]) : '';
+
+            // Validate: if rating is 0, comment is required
+            if ($ratingValue === 0 && empty($comment)) {
+                $success = false;
+                $errors[] = "Justification is required for zero rating on parameter: " . ($index + 1);
+                continue;
+            }
+
             $ratingData = [
                 'employee_id' => $employee_id,
                 'parameter_id' => $parameterId,
-                'rating' => intval($_POST[$ratingKey]),
+                'rating' => $ratingValue,
                 'rated_by' => $manager_id,
                 'rating_week' => $week,
                 'rating_year' => $year,
-                'comments' => isset($_POST[$commentKey]) ? $_POST[$commentKey] : ''
+                'comments' => $comment
             ];
-            
+
             $result = $rating->saveRating($ratingData);
-            
+
             if ($result['success']) {
                 $saved++;
             } else {
@@ -244,20 +254,14 @@ include '../../includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            
-            <div class="col-md-3">
-                <label for="week" class="form-label">Week</label>
+
+            <div class="col-md-6">
+                <label for="week" class="form-label">Rating Period</label>
                 <select class="form-select" id="week" name="week">
                     <?php echo getWeekOptions($selectedWeek); ?>
                 </select>
-            </div>
-            
-            <div class="col-md-3">
-                <label for="year" class="form-label">Year</label>
-                <select class="form-select" id="year" name="year">
-                    <?php echo getYearOptions($selectedYear); ?>
-                </select>
-            </div>
+                <input type="hidden" id="year" name="year" value="<?php echo $selectedYear; ?>">
+            </div> 
             
             <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">Select</button>
@@ -267,27 +271,6 @@ include '../../includes/header.php';
 </div>
 
 <?php if ($employee_id && $employeeInfo): ?>
-    <!-- Employee Information -->
-    <!--div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold">Employee Information</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>Name:</strong> <?php echo htmlspecialchars($employeeInfo['first_name'] . ' ' . $employeeInfo['last_name']); ?></p>
-                    <p><strong>Position:</strong> <?php echo htmlspecialchars($employeeInfo['position']); ?></p>
-                    <p><strong>Email:</strong> <?php echo htmlspecialchars($employeeInfo['email']); ?></p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Team:</strong> <?php echo $teamInfo ? htmlspecialchars($teamInfo['name']) : 'N/A'; ?></p>
-                    <p><strong>Department:</strong> <?php echo $departmentInfo ? htmlspecialchars($departmentInfo['name']) : 'N/A'; ?></p>
-                    <p><strong>Rating Period:</strong> <?php echo formatWeekRange($selectedWeek, $selectedYear); ?></p>
-                </div>
-            </div>
-        </div>
-    </div--!>
-    
     <?php if (empty($parameters)): ?>
         <div class="alert alert-warning" role="alert">
             <i class="bi bi-exclamation-triangle me-2"></i> No rating parameters found for this employee's department. Please contact the CEO to set up rating parameters.
@@ -343,22 +326,47 @@ include '../../includes/header.php';
                                     $selectedYear
                                 );
                                 $ratingValue = ($existingRating && isset($existingRating['rating'])) ? $existingRating['rating'] : 0;
+                                $commentValue = ($existingRating && isset($existingRating['comments'])) ? $existingRating['comments'] : '';
                                 ?>
                                 <div class="list-group-item py-2 mobile-rating-item">
                                     <div class="d-flex justify-content-between align-items-center mobile-rating-row">
                                         <span class="parameter-name"><?php echo htmlspecialchars($param['name']); ?></span>
                                         <input type="hidden" name="parameter_id[]" value="<?php echo $param['id']; ?>">
+                                        <!-- Hidden field to store comments -->
+                                        <input type="hidden" class="comment-input" 
+                                               name="comment_<?php echo $param['id']; ?>" 
+                                               id="comment_<?php echo $param['id']; ?>"
+                                               value="<?php echo htmlspecialchars($commentValue); ?>">
                                         <div class="rating-group mobile-stars">
+                                            <!-- Add zero rating option -->
+                                            <div class="form-check form-check-inline m-0 star-item">
+                                                <input class="form-check-input visually-hidden rating-input" 
+                                                       type="radio"
+                                                       name="rating_<?php echo $param['id']; ?>"
+                                                       id="rating_<?php echo $param['id']; ?>_0"
+                                                       value="0"
+                                                       data-parameter-id="<?php echo $param['id']; ?>"
+                                                       data-parameter-name="<?php echo htmlspecialchars($param['name']); ?>"
+                                                       <?php echo ($ratingValue == 0) ? 'checked' : ''; ?>
+                                                       required>
+                                                <label class="form-check-label star-label" for="rating_<?php echo $param['id']; ?>_0">
+                                                    <i class="bi bi-x-circle text-danger"></i>
+                                                </label>
+                                            </div>
+                                            
                                             <?php for ($i = 1; $i <= 5; $i++): ?>
                                                 <div class="form-check form-check-inline m-0 star-item">
-                                                    <input class="form-check-input visually-hidden" type="radio"
+                                                    <input class="form-check-input visually-hidden rating-input" 
+                                                           type="radio"
                                                            name="rating_<?php echo $param['id']; ?>"
                                                            id="rating_<?php echo $param['id']; ?>_<?php echo $i; ?>"
                                                            value="<?php echo $i; ?>"
+                                                           data-parameter-id="<?php echo $param['id']; ?>"
+                                                           data-parameter-name="<?php echo htmlspecialchars($param['name']); ?>"
                                                            <?php echo ($ratingValue == $i) ? 'checked' : ''; ?>
                                                            required>
                                                     <label class="form-check-label star-label" for="rating_<?php echo $param['id']; ?>_<?php echo $i; ?>">
-                                                        <i class="bi <?php echo ($ratingValue >= $i) ? 'bi-star-fill' : 'bi-star'; ?> text-warning"></i>
+                                                        <i class="bi <?php echo ($ratingValue >= $i && $ratingValue > 0) ? 'bi-star-fill' : 'bi-star'; ?> text-warning"></i>
                                                     </label>
                                                 </div>
                                             <?php endfor; ?>
@@ -394,44 +402,232 @@ include '../../includes/header.php';
     </div>
 <?php endif; ?>
 
+<!-- Zero Rating Comment Modal -->
+<div class="modal fade" id="zeroRatingModal" tabindex="-1" aria-labelledby="zeroRatingModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="zeroRatingModalLabel">Justification Required</h5>
+            </div>
+            <div class="modal-body" id="zero-rating-parameters-container">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Zero rating requires justification
+                </div>
+                <!-- Parameters requiring comments will be added here dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelZeroRating">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveZeroRatingComment">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Add this at the end of your file before </body>
+// Ensure year is updated when week changes
+// Ensure year is updated when week changes
 document.addEventListener('DOMContentLoaded', function() {
     // Form validation
     const ratingForm = document.getElementById('ratingForm');
-    if (ratingForm) {
-        ratingForm.addEventListener('submit', function(event) {
-            let isValid = true;
+    
+    document.getElementById('week').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const year = selectedOption.getAttribute('data-year');
+        document.getElementById('year').value = year;
+    });
+
+    // Zero rating handling
+    const zeroRatingModal = new bootstrap.Modal(document.getElementById('zeroRatingModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    
+    // Keep track of which parameters have zero ratings
+    let zeroRatedParameters = new Set();
+    let submittedFromModal = false;
+    let nextEmployeeClicked = null;
+
+    // Function to open modal for zero ratings
+    function checkAndShowZeroRatingModal() {
+        zeroRatedParameters.clear();
+        
+        // Find all parameters with zero ratings
+        document.querySelectorAll('.rating-input:checked').forEach(function(input) {
+            if (parseInt(input.value) === 0) {
+                zeroRatedParameters.add(input.getAttribute('data-parameter-id'));
+            }
+        });
+        
+        // If there are zero ratings, show the modal
+        if (zeroRatedParameters.size > 0) {
+            updateZeroRatingModalContent();
+            zeroRatingModal.show();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Update modal content with parameter fields
+    function updateZeroRatingModalContent() {
+        const container = document.getElementById('zero-rating-parameters-container');
+        // Keep the alert div
+        const alertDiv = container.querySelector('.alert');
+        container.innerHTML = '';
+        container.appendChild(alertDiv);
+        
+        // Add a field for each parameter with zero rating
+        zeroRatedParameters.forEach(parameterId => {
+            const input = document.querySelector(`#rating_${parameterId}_0`);
+            const parameterName = input.getAttribute('data-parameter-name');
+            const commentValue = document.getElementById(`comment_${parameterId}`).value;
             
-            // Check if at least one rating is selected for each parameter
-            const ratingGroups = document.querySelectorAll('.rating-group');
-            ratingGroups.forEach(function(group) {
-                const radioName = group.querySelector('input[type="radio"]').name;
-                const checkedInputs = document.querySelectorAll('input[name="' + radioName + '"]:checked');
+            const paramDiv = document.createElement('div');
+            paramDiv.className = 'mb-3 zero-rating-comment-group';
+            paramDiv.setAttribute('data-parameter-id', parameterId);
+            
+            paramDiv.innerHTML = `
+                <label class="form-label">Parameter: ${parameterName}</label>
+                <textarea class="form-control zero-rating-comment" 
+                          data-parameter-id="${parameterId}"
+                          rows="3" 
+                          placeholder="Please provide justification for zero rating">${commentValue}</textarea>
+                <div class="invalid-feedback">
+                    Justification is required for zero rating
+                </div>
+            `;
+            
+            container.appendChild(paramDiv);
+        });
+    }
+    
+    // Handle saving comments from modal
+    document.getElementById('saveZeroRatingComment').addEventListener('click', function() {
+        let allValid = true;
+        
+        // Validate all comment fields
+        document.querySelectorAll('.zero-rating-comment').forEach(function(textarea) {
+            const parameterId = textarea.getAttribute('data-parameter-id');
+            const commentField = document.getElementById(`comment_${parameterId}`);
+            
+            if (textarea.value.trim() === '') {
+                textarea.classList.add('is-invalid');
+                allValid = false;
+            } else {
+                textarea.classList.remove('is-invalid');
+                // Update the hidden comment field
+                commentField.value = textarea.value.trim();
+            }
+        });
+        
+        if (allValid) {
+            submittedFromModal = true;
+            zeroRatingModal.hide();
+            
+            // If this was triggered from the form submission, submit the form now
+            if (window.formSubmitPending) {
+                window.formSubmitPending = false;
                 
-                if (checkedInputs.length === 0) {
-                    isValid = false;
-                    // Add error message
-                    if (!group.nextElementSibling || !group.nextElementSibling.classList.contains('text-danger')) {
-                        const errorMsg = document.createElement('div');
-                        errorMsg.className = 'text-danger mt-1';
-                        errorMsg.textContent = 'Please select a rating';
-                        group.after(errorMsg);
-                    }
-                } else {
-                    // Remove error message if exists
-                    if (group.nextElementSibling && group.nextElementSibling.classList.contains('text-danger')) {
-                        group.nextElementSibling.remove();
-                    }
+                // Handle next employee if it was clicked
+                if (nextEmployeeClicked) {
+                    // Create a hidden input for next_employee
+                    const nextInput = document.createElement('input');
+                    nextInput.type = 'hidden';
+                    nextInput.name = 'next_employee';
+                    nextInput.value = nextEmployeeClicked;
+                    document.getElementById('ratingForm').appendChild(nextInput);
+                }
+                
+                document.getElementById('ratingForm').submit();
+            }
+        }
+    });
+    
+    // Cancel button handler
+    document.getElementById('cancelZeroRating').addEventListener('click', function() {
+        handleCancelZeroRating();
+    });
+    
+    function handleCancelZeroRating() {
+        // Uncheck all zero ratings
+        zeroRatedParameters.forEach(parameterId => {
+            const zeroInput = document.getElementById(`rating_${parameterId}_0`);
+            zeroInput.checked = false;
+            
+            // Find the previous rating or default to 3
+            const paramInputs = document.querySelectorAll(`input[name="rating_${parameterId}"]`);
+            let previousSelected = null;
+            
+            // Check for data-previous-value attribute
+            paramInputs.forEach(input => {
+                if (input.getAttribute('data-previous-value') === 'true') {
+                    input.checked = true;
+                    previousSelected = input;
                 }
             });
             
-            if (!isValid) {
+            // If no previous value found, default to rating 3
+            if (!previousSelected) {
+                const defaultInput = document.getElementById(`rating_${parameterId}_3`);
+                if (defaultInput) {
+                    defaultInput.checked = true;
+                }
+            }
+        });
+        
+        zeroRatingModal.hide();
+        zeroRatedParameters.clear();
+        nextEmployeeClicked = null;
+    }
+    
+    // Add event listener to zero rating inputs
+    document.querySelectorAll('.rating-input').forEach(function(input) {
+        // Set initial previous value markers
+        if (input.checked && input.value !== '0') {
+            input.setAttribute('data-previous-value', 'true');
+        }
+        
+        // Update when a new rating is selected
+        input.addEventListener('click', function() {
+            if (this.value !== '0') {
+                // Clear previous values for this parameter
+                document.querySelectorAll(`input[name="${this.name}"]`).forEach(inp => {
+                    inp.removeAttribute('data-previous-value');
+                });
+                
+                // Mark this as the new previous value
+                this.setAttribute('data-previous-value', 'true');
+            }
+        });
+    });
+    
+    // Form validation for zero ratings
+    if (ratingForm) {
+        ratingForm.addEventListener('submit', function(event) {
+            // Check if Next button was clicked
+            if (event.submitter && event.submitter.name === 'next_employee') {
+                nextEmployeeClicked = event.submitter.value;
+            } else {
+                nextEmployeeClicked = null;
+            }
+            
+            // Check if there are zero ratings that need comments
+            if (checkAndShowZeroRatingModal()) {
+                // Prevent the default form submission
                 event.preventDefault();
-                alert('Please complete all ratings before submitting.');
+                
+                // Flag that we're waiting for modal input
+                window.formSubmitPending = true;
             }
         });
     }
+    
+    // Add event listener to all textarea fields in the modal
+    document.getElementById('zero-rating-parameters-container').addEventListener('input', function(event) {
+        if (event.target.classList.contains('zero-rating-comment')) {
+            event.target.classList.remove('is-invalid');
+        }
+    });
     
     // Enhance star rating system
     const ratingGroups = document.querySelectorAll('.rating-group');

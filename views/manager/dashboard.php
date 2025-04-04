@@ -36,6 +36,14 @@ $currentYear = $currentWeekYear['year'];
 // Get pending ratings
 $pendingRatings = $rating->getPendingRatings($manager_id, $currentWeek, $currentYear);
 
+// Check and apply auto-zero ratings for missed weeks
+$autoZeroApplied = $rating->applyDefaultZeroRatings($manager_id, $currentWeek, $currentYear);
+
+if ($autoZeroApplied) {
+    // Optional: Add notification about auto-generated ratings
+    //$notification->create($manager_id, "Zero ratings have been automatically applied for missed evaluation periods.");
+}
+
 // Include header
 include '../../includes/header.php';
 ?>

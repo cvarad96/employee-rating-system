@@ -8,6 +8,7 @@ require_once '../../config/config.php';
 require_once '../../includes/auth.php';
 require_once '../../classes/Employee.php';
 require_once '../../classes/Department.php';
+require_once '../../includes/functions.php'; // Add this line
 require_once '../../classes/Team.php';
 require_once '../../classes/Rating.php';
 
@@ -134,6 +135,9 @@ include '../../includes/header.php';
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
             <a href="dashboard.php" class="btn btn-sm btn-outline-secondary">Back to Dashboard</a>
+            <a href="annual_report.php" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-calendar-range"></i> Annual Report
+            </a>
         </div>
     </div>
 </div>
@@ -148,7 +152,7 @@ include '../../includes/header.php';
             <div class="col-md-2">
                 <label for="week" class="form-label">Week</label>
                 <select class="form-select" id="week" name="week">
-                    <?php echo getWeekOptions($selectedWeek); ?>
+                    <?php echo getAdminWeekOptions($selectedWeek); ?>
                 </select>
             </div>
             

@@ -201,7 +201,7 @@ class Notification {
         
         $auth = [
             'VAPID' => [
-                'subject' => 'mailto:admin@employees.test.com',
+                'subject' => 'mailto:admin@employees.indionetworks.com',
                 'publicKey' => 'YOUR_PUBLIC_KEY',
                 'privateKey' => 'YOUR_PRIVATE_KEY',
             ],

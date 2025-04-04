@@ -1,152 +1,227 @@
--- Create database
-CREATE DATABASE IF NOT EXISTS employee_rating_system;
+-- Employee Rating System Database Schema
+-- Author: Indio Networks
+-- Date: 2025-04-04
+-- Version: 1.0
+
+-- Create the database and select it for use
+CREATE DATABASE IF NOT EXISTS employee_rating_system CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE employee_rating_system;
 
--- Users table (Admin and Managers)
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
-    role ENUM('admin','manager') NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_active TINYINT(1) NOT NULL DEFAULT 1
+-- Ensure proper character set
+SET NAMES utf8mb4;
+SET character_set_client = utf8mb4;
+
+-- Disable foreign key checks during initial setup
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- -----------------------------------------------------
+-- Table `users`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `first_name` varchar(50) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `role` enum('admin','manager') NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Departments table
-CREATE TABLE departments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_active TINYINT(1) NOT NULL DEFAULT 1
+-- -----------------------------------------------------
+-- Table `departments`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `departments`;
+CREATE TABLE `departments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Teams table
-CREATE TABLE teams (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    department_id INT NOT NULL,
-    manager_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    KEY department_id (department_id),
-    KEY manager_id (manager_id),
-    CONSTRAINT teams_ibfk_1 FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE,
-    CONSTRAINT teams_ibfk_2 FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE CASCADE
+-- -----------------------------------------------------
+-- Table `teams`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `teams`;
+CREATE TABLE `teams` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `department_id` int(11) NOT NULL,
+  `manager_id` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `department_id` (`department_id`),
+  KEY `manager_id` (`manager_id`),
+  CONSTRAINT `teams_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `teams_ibfk_2` FOREIGN KEY (`manager_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Employees table
-CREATE TABLE employees (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    phone VARCHAR(20) DEFAULT NULL,
-    position VARCHAR(100) DEFAULT NULL,
-    created_by INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    KEY created_by (created_by),
-    CONSTRAINT employees_ibfk_1 FOREIGN KEY (created_by) REFERENCES users(id)
+-- -----------------------------------------------------
+-- Table `employees`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `employees`;
+CREATE TABLE `employees` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `first_name` varchar(50) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `position` varchar(100) DEFAULT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `created_by` (`created_by`),
+  CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Team members table (linking employees to teams)
-CREATE TABLE team_members (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    team_id INT NOT NULL,
-    employee_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY team_id (team_id,employee_id),
-    KEY employee_id (employee_id),
-    CONSTRAINT team_members_ibfk_1 FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
-    CONSTRAINT team_members_ibfk_2 FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+-- -----------------------------------------------------
+-- Table `team_members`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `team_members`;
+CREATE TABLE `team_members` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `team_id` int(11) NOT NULL,
+  `employee_id` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `team_id` (`team_id`,`employee_id`),
+  KEY `employee_id` (`employee_id`),
+  CONSTRAINT `team_members_ibfk_1` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `team_members_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Rating parameters table
-CREATE TABLE rating_parameters (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    department_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    KEY department_id (department_id),
-    CONSTRAINT rating_parameters_ibfk_1 FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
+-- -----------------------------------------------------
+-- Table `rating_parameters`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `rating_parameters`;
+CREATE TABLE `rating_parameters` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `department_id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `department_id` (`department_id`),
+  CONSTRAINT `rating_parameters_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Employee ratings table
-CREATE TABLE employee_ratings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    employee_id INT NOT NULL,
-    parameter_id INT NOT NULL,
-    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    rated_by INT DEFAULT NULL,
-    rating_week INT NOT NULL,
-    rating_year INT NOT NULL,
-    comments TEXT DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    KEY employee_id (employee_id),
-    KEY parameter_id (parameter_id),
-    KEY employee_ratings_ibfk_3 (rated_by),
-    CONSTRAINT employee_ratings_ibfk_1 FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
-    CONSTRAINT employee_ratings_ibfk_2 FOREIGN KEY (parameter_id) REFERENCES rating_parameters(id) ON DELETE CASCADE,
-    CONSTRAINT employee_ratings_ibfk_3 FOREIGN KEY (rated_by) REFERENCES users(id) ON DELETE SET NULL
+-- -----------------------------------------------------
+-- Table `employee_ratings`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `employee_ratings`;
+CREATE TABLE `employee_ratings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `employee_id` int(11) NOT NULL,
+  `parameter_id` int(11) NOT NULL,
+  `rating` int(11) NOT NULL CHECK (`rating` between 0 and 5),
+  `rated_by` int(11) DEFAULT NULL,
+  `rating_week` int(11) NOT NULL,
+  `rating_year` int(11) NOT NULL,
+  `comments` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `employee_id` (`employee_id`),
+  KEY `parameter_id` (`parameter_id`),
+  KEY `employee_ratings_ibfk_3` (`rated_by`),
+  CONSTRAINT `employee_ratings_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `employee_ratings_ibfk_2` FOREIGN KEY (`parameter_id`) REFERENCES `rating_parameters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `employee_ratings_ibfk_3` FOREIGN KEY (`rated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Notification logs table
-CREATE TABLE notification_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL,
-    message TEXT NOT NULL,
-    is_read TINYINT(1) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    KEY notification_logs_ibfk_1 (user_id),
-    CONSTRAINT notification_logs_ibfk_1 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+-- -----------------------------------------------------
+-- Table `audit_logs`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `audit_logs`;
+CREATE TABLE `audit_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `action` varchar(100) NOT NULL,
+  `entity_type` varchar(50) NOT NULL,
+  `entity_id` int(11) DEFAULT NULL,
+  `description` text NOT NULL,
+  `old_values` text DEFAULT NULL,
+  `new_values` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `audit_logs_ibfk_1` (`user_id`),
+  CONSTRAINT `audit_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Password resets table
-CREATE TABLE password_resets (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    token VARCHAR(255) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY token (token),
-    KEY user_id (user_id),
-    CONSTRAINT password_resets_ibfk_1 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+-- -----------------------------------------------------
+-- Table `notification_logs`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `notification_logs`;
+CREATE TABLE `notification_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `message` text NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `notification_logs_ibfk_1` (`user_id`),
+  CONSTRAINT `notification_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- User push subscriptions table
-CREATE TABLE user_push_subscriptions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL,
-    subscription_data TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY user_id (user_id),
-    CONSTRAINT user_push_fk_1 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+-- -----------------------------------------------------
+-- Table `password_resets`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `password_resets`;
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `token` varchar(255) NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token` (`token`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `password_resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Audit logs table
-CREATE TABLE audit_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL,
-    action VARCHAR(100) NOT NULL,
-    entity_type VARCHAR(50) NOT NULL,
-    entity_id INT DEFAULT NULL,
-    description TEXT NOT NULL,
-    old_values TEXT DEFAULT NULL,
-    new_values TEXT DEFAULT NULL,
-    ip_address VARCHAR(45) DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    KEY audit_logs_ibfk_1 (user_id),
-    CONSTRAINT audit_logs_ibfk_1 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+-- -----------------------------------------------------
+-- Table `user_push_subscriptions`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `user_push_subscriptions`;
+CREATE TABLE `user_push_subscriptions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `subscription_data` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  CONSTRAINT `user_push_fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Re-enable foreign key checks
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- -----------------------------------------------------
+-- Create default admin user (password: admin123)
+-- Comment out this section as needed
+-- -----------------------------------------------------
+INSERT INTO `users` (`username`, `password`, `email`, `first_name`, `last_name`, `role`)
+VALUES ('admin', '$2y$10$aM1YKkWZ6Qyqt/WEo.5ffuPYdgDJxU9ARS9sehS267cMrQEfzUT.m', 'admin@indionetworks.com', 'Admin', 'User', 'admin');
+
+-- -----------------------------------------------------
+-- Setup completed
+-- -----------------------------------------------------

@@ -265,6 +265,13 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link <?php echo ($current_page == 'annual_report.php') ? 'active' : ''; ?>" 
+                                   href="<?php echo APP_URL; ?>/views/admin/annual_report.php">
+                                    <i class="bi bi-calendar-range me-1"></i>
+                                    Annual Report
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link <?php echo ($current_page == 'audit_logs.php') ? 'active' : ''; ?>" 
                                    href="<?php echo APP_URL; ?>/views/admin/audit_logs.php">
                                     <i class="bi bi-clock-history me-1"></i>

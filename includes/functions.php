@@ -51,20 +51,83 @@ function formatWeekRange($week, $year) {
 }
 
 /**
- * Get weeks for current year as options for select
+ * Get weeks for current year as options for select - MODIFIED to only show last 2 weeks + current week
  */
 function getWeekOptions($selectedWeek = null) {
     $currentWeek = getCurrentWeek();
     $currentYear = getCurrentYear();
     $options = '';
-    
-    // Generate options for all weeks up to the current week
-    for ($week = 1; $week <= $currentWeek; $week++) {
+
+    // Generate array of allowed weeks (current week and previous two weeks)
+    $allowedWeeks = [];
+
+    // Add current week
+    $allowedWeeks[] = [
+        'week' => $currentWeek,
+        'year' => $currentYear
+    ];
+
+    // Add previous two weeks
+    for ($i = 1; $i <= 2; $i++) {
+        $date = new DateTime();
+        $date->setISODate($currentYear, $currentWeek);
+        $date->modify("-$i week");
+
+        $prevWeek = intval($date->format('W'));
+        $prevYear = intval($date->format('Y'));
+
+        $allowedWeeks[] = [
+            'week' => $prevWeek,
+            'year' => $prevYear
+        ];
+    }
+
+    // Generate options for allowed weeks
+    foreach ($allowedWeeks as $weekData) {
+        $week = $weekData['week'];
+        $year = $weekData['year'];
+        $selected = ($week == $selectedWeek) ? 'selected' : '';
+        $weekRange = formatWeekRange($week, $year);
+        $options .= "<option value=\"$week\" data-year=\"$year\" $selected>$weekRange</option>";
+    }
+
+    return $options;
+}
+
+/**
+ * Get ALL weeks for the year as options for admin reports
+ */
+function getAdminWeekOptions($selectedWeek = null) {
+    $currentWeek = getCurrentWeek();
+    $currentYear = getCurrentYear();
+    $options = '';
+
+    // Generate options for all weeks in the current year
+    for ($week = 1; $week <= 53; $week++) {
+        // Check if this week is valid for the year
+        $dateCheck = new DateTime();
+        if (!@$dateCheck->setISODate($currentYear, $week, 1)) {
+            continue; // Skip invalid week numbers
+        }
+
         $selected = ($week == $selectedWeek) ? 'selected' : '';
         $weekRange = formatWeekRange($week, $currentYear);
-        $options .= "<option value=\"$week\" $selected>$weekRange</option>";
+        $options .= "<option value=\"$week\" data-year=\"$currentYear\" $selected>$weekRange</option>";
     }
-    
+
+    // Add previous year's weeks too
+    $prevYear = $currentYear - 1;
+    for ($week = 1; $week <= 53; $week++) {
+        $dateCheck = new DateTime();
+        if (!@$dateCheck->setISODate($prevYear, $week, 1)) {
+            continue; // Skip invalid week numbers
+        }
+
+        $selected = ($week == $selectedWeek && isset($_GET['year']) && $_GET['year'] == $prevYear) ? 'selected' : '';
+        $weekRange = formatWeekRange($week, $prevYear);
+        $options .= "<option value=\"$week\" data-year=\"$prevYear\" $selected>$weekRange ($prevYear)</option>";
+    }
+
     return $options;
 }
 

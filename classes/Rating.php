@@ -399,4 +399,134 @@ class Rating {
 
         return $incompleteWeeks;
     }
+
+    /**
+     * Apply default zero ratings for missed weeks
+     *
+     * @param int $manager_id The manager ID
+     * @param int $current_week Current week
+     * @param int $current_year Current year
+     * @return bool Success status
+     */
+    public function applyDefaultZeroRatings($manager_id, $current_week, $current_year) {
+        // Get rating periods that need to be auto-completed
+        $autoCompleteWeeks = $this->getMissedRatingPeriods($manager_id, $current_week, $current_year);
+
+        if (empty($autoCompleteWeeks)) {
+            return true; // Nothing to auto-complete
+        }
+
+        $db = $this->getDb();
+        $success = true;
+
+        try {
+            $db->beginTransaction();
+
+            foreach ($autoCompleteWeeks as $weekData) {
+                $week = $weekData['week'];
+                $year = $weekData['year'];
+
+                // Get employees and parameters that need ratings
+                $pendingRatings = $this->getPendingRatings($manager_id, $week, $year);
+
+                foreach ($pendingRatings as $employee) {
+                    // Skip if all parameters are already rated
+                    if ($employee['rated_parameters'] >= $employee['total_parameters']) {
+                        continue;
+                    }
+
+                    // Get employee's team and department
+                    $sql = "SELECT t.department_id
+                        FROM team_members tm
+                        JOIN teams t ON tm.team_id = t.id
+                        WHERE tm.employee_id = ?";
+                    $teamData = $db->single($sql, [$employee['id']]);
+
+                    if (!$teamData) {
+                        continue; // Skip if no team found
+                    }
+
+                    // Get parameters for this department
+                    $sql = "SELECT id FROM rating_parameters WHERE department_id = ?";
+                    $parameters = $db->resultset($sql, [$teamData['department_id']]);
+
+                    foreach ($parameters as $param) {
+                        // Check if rating already exists
+                        $existing = $this->getSpecificRating(
+                            $employee['id'],
+                            $param['id'],
+                            $week,
+                            $year
+                        );
+
+                        if (!$existing) {
+                            // Create a zero rating with auto-generated comment
+                            $sql = "INSERT INTO employee_ratings
+                                (employee_id, parameter_id, rating, rated_by,
+                                rating_week, rating_year, comments)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+                            $db->query($sql, [
+                                $employee['id'],
+                                $param['id'],
+                                0, // Zero rating
+                                $manager_id,
+                                $week,
+                                $year,
+                                "Auto-generated zero rating for missed evaluation period."
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            $db->endTransaction();
+            return true;
+        } catch (Exception $e) {
+            $db->cancelTransaction();
+            error_log("Error applying default zero ratings: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get missed rating periods (older than 3 weeks that should be auto-completed)
+     */
+    private function getMissedRatingPeriods($manager_id, $current_week, $current_year) {
+        // We're looking for weeks that:
+        // 1. Are at least 3 weeks old
+        // 2. Have incomplete ratings
+
+        $missedWeeks = [];
+
+        // Check the last 12 weeks (~ 3 months, adjust as needed)
+        for ($i = 3; $i <= 12; $i++) {
+            $date = new DateTime();
+            $date->setISODate($current_year, $current_week);
+            $date->modify("-$i week");
+
+            $week = intval($date->format('W'));
+            $year = intval($date->format('Y'));
+
+            // Check if there are incomplete ratings for this week
+            $pendingRatings = $this->getPendingRatings($manager_id, $week, $year);
+            $hasIncomplete = false;
+
+            foreach ($pendingRatings as $pending) {
+                if ($pending['rated_parameters'] < $pending['total_parameters']) {
+                    $hasIncomplete = true;
+                    break;
+                }
+            }
+
+            if ($hasIncomplete) {
+                $missedWeeks[] = [
+                    'week' => $week,
+                    'year' => $year
+                ];
+            }
+        }
+
+        return $missedWeeks;
+    } 
 }
