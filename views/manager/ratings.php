@@ -11,6 +11,7 @@ require_once '../../classes/Department.php';
 require_once '../../classes/Team.php';
 require_once '../../classes/Rating.php';
 require_once '../../classes/Notification.php';
+require_once '../../classes/ReportGenerator.php';
 
 // Ensure user is Manager
 requireManager();
@@ -178,7 +179,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         foreach ($admins as $admin) {
             $notification->create($admin['id'], $message);
-        }
+	}
+
+	// Send immediate email report to the employee
+	try {
+		$reportGenerator = new ReportGenerator();
+		$emailSent = $reportGenerator->sendWeeklyReport($employee_id, $week, $year);
+
+		if ($emailSent) {
+			$_SESSION['message'] .= " Performance report has been emailed to the employee.";
+		} else {
+			// Don't show error to avoid confusing the manager - just log it
+			error_log("Failed to send performance report email to employee ID: $employee_id");
+		}
+	} catch (Exception $e) {
+		error_log("Exception sending performance report: " . $e->getMessage());
+	}
         
         // Check if we should go to the next employee
         if (isset($_POST['next_employee']) && !empty($_POST['next_employee'])) {
