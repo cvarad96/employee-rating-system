@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Include config
-$root_path = '/var/www/employee-rating-system';
+$root_path = dirname(dirname(__FILE__));
 require_once $root_path . '/config/config.php';
 require_once $root_path . '/includes/auth.php';
 require_once $root_path . '/includes/functions.php';
