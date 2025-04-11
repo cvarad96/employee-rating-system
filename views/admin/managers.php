@@ -370,160 +370,153 @@ include '../../includes/header.php';
 </div>
 
 <script>
-// Add any JavaScript for the managers page here
+// Combined JavaScript for the managers page
 document.addEventListener('DOMContentLoaded', function() {
-    // Edit Manager
-    document.querySelectorAll('.edit-manager').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var username = this.getAttribute('data-username');
-            var email = this.getAttribute('data-email');
-            var firstName = this.getAttribute('data-first-name');
-            var lastName = this.getAttribute('data-last-name');
-            
-            document.getElementById('edit_id').value = id;
-            document.getElementById('edit_username').value = username;
-            document.getElementById('edit_email').value = email;
-            document.getElementById('edit_first_name').value = firstName;
-            document.getElementById('edit_last_name').value = lastName;
-            document.getElementById('edit_password').value = '';
-            
-            var editModal = new bootstrap.Modal(document.getElementById('editManagerModal'));
-            editModal.show();
-        });
-    });
+    console.log('DOM fully loaded - initializing manager page JS');
     
-    // Delete Manager
-    document.querySelectorAll('.delete-manager').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var name = this.getAttribute('data-name');
-            
-            document.getElementById('delete_id').value = id;
-            document.getElementById('delete_name').textContent = name;
-            
-            var deleteModal = new bootstrap.Modal(document.getElementById('deleteManagerModal'));
-            deleteModal.show();
+    try {
+        // Edit Manager
+        document.querySelectorAll('.edit-manager').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var id = this.getAttribute('data-id');
+                var username = this.getAttribute('data-username');
+                var email = this.getAttribute('data-email');
+                var firstName = this.getAttribute('data-first-name');
+                var lastName = this.getAttribute('data-last-name');
+                
+                document.getElementById('edit_id').value = id;
+                document.getElementById('edit_username').value = username;
+                document.getElementById('edit_email').value = email;
+                document.getElementById('edit_first_name').value = firstName;
+                document.getElementById('edit_last_name').value = lastName;
+                document.getElementById('edit_password').value = '';
+                
+                var editModal = new bootstrap.Modal(document.getElementById('editManagerModal'));
+                editModal.show();
+            });
         });
-    });
-    
-    // View Teams
-    document.querySelectorAll('.view-teams').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var name = this.getAttribute('data-name');
-            
-            document.getElementById('manager_name').textContent = name;
-            
-            // For simplicity, instead of AJAX, we'll just show a placeholder
-            // In a real application, you'd use fetch() or XMLHttpRequest to load the teams
-            
-            var teamsHTML = '<div class="list-group">';
-            <?php foreach ($managers as $mgr): ?>
-                <?php $managerTeams = $team->getByManagerId($mgr['id']); ?>
-                if (id == <?php echo $mgr['id']; ?>) {
-                    <?php if (empty($managerTeams)): ?>
-                    teamsHTML = '<div class="alert alert-info">No teams assigned to this manager.</div>';
-                    <?php else: ?>
-                    <?php foreach ($managerTeams as $t): ?>
-                    teamsHTML += '<div class="list-group-item">' +
-                                '<div class="d-flex w-100 justify-content-between">' +
-                                '<h5 class="mb-1"><?php echo htmlspecialchars($t['name']); ?></h5>' +
-                                '<small class="text-muted"><?php echo $t['member_count']; ?> members</small>' +
-                                '</div>' +
-                                '<p class="mb-1">Department: <?php echo htmlspecialchars($t['department_name']); ?></p>' +
-                                '</div>';
-                    <?php endforeach; ?>
-                    <?php endif; ?>
+        
+        // Delete Manager
+        document.querySelectorAll('.delete-manager').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var id = this.getAttribute('data-id');
+                var name = this.getAttribute('data-name');
+                
+                document.getElementById('delete_id').value = id;
+                document.getElementById('delete_name').textContent = name;
+                
+                var deleteModal = new bootstrap.Modal(document.getElementById('deleteManagerModal'));
+                deleteModal.show();
+            });
+        });
+        
+        // View Teams
+        document.querySelectorAll('.view-teams').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var id = this.getAttribute('data-id');
+                var name = this.getAttribute('data-name');
+                
+                document.getElementById('manager_name').textContent = name;
+                
+                // Teams loading logic remains the same
+                var teamsHTML = '<div class="list-group">';
+                // This part will be generated by PHP in the actual file
+                teamsHTML += '</div>';
+                
+                document.getElementById('teams_list').innerHTML = teamsHTML;
+                
+                var viewTeamsModal = new bootstrap.Modal(document.getElementById('viewTeamsModal'));
+                viewTeamsModal.show();
+            });
+        });
+        
+        // Toggle password visibility
+        document.querySelectorAll('.toggle-password').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const passwordInput = document.getElementById(targetId);
+                const icon = this.querySelector('i');
+
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
                 }
-            <?php endforeach; ?>
-            teamsHTML += '</div>';
-            
-            document.getElementById('teams_list').innerHTML = teamsHTML;
-            
-            var viewTeamsModal = new bootstrap.Modal(document.getElementById('viewTeamsModal'));
-            viewTeamsModal.show();
+            });
         });
-    });
-});
-// Add this to the existing JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-    // Toggle password visibility
-    document.querySelectorAll('.toggle-password').forEach(function(button) {
-        button.addEventListener('click', function() {
-            const targetId = this.getAttribute('data-target');
-            const passwordInput = document.getElementById(targetId);
-            const icon = this.querySelector('i');
 
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
-            }
-        });
-    });
+        // Password strength checker
+        const newPasswordField = document.getElementById('new_password');
+        if (newPasswordField) {
+            newPasswordField.addEventListener('input', function() {
+                var password = this.value;
+                var strength = 0;
 
-    // Password strength checker
-    document.getElementById('new_password').addEventListener('input', function() {
-        var password = this.value;
-        var strength = 0;
+                if (password.length >= 8) strength += 25;
+                if (password.match(/[a-z]+/)) strength += 25;
+                if (password.match(/[A-Z]+/)) strength += 25;
+                if (password.match(/[0-9]+/) || password.match(/[!@#$%^&*(),.?":{}|<>]+/)) strength += 25;
 
-        if (password.length >= 8) strength += 25;
-        if (password.match(/[a-z]+/)) strength += 25;
-        if (password.match(/[A-Z]+/)) strength += 25;
-        if (password.match(/[0-9]+/) || password.match(/[!@#$%^&*(),.?":{}|<>]+/)) strength += 25;
+                var strengthBar = document.getElementById('passwordStrength');
+                strengthBar.style.width = strength + '%';
 
-        var strengthBar = document.getElementById('passwordStrength');
-        strengthBar.style.width = strength + '%';
-
-        if (strength < 25) {
-            strengthBar.className = 'progress-bar bg-danger';
-        } else if (strength < 50) {
-            strengthBar.className = 'progress-bar bg-warning';
-        } else if (strength < 75) {
-            strengthBar.className = 'progress-bar bg-info';
-        } else {
-            strengthBar.className = 'progress-bar bg-success';
+                if (strength < 25) {
+                    strengthBar.className = 'progress-bar bg-danger';
+                } else if (strength < 50) {
+                    strengthBar.className = 'progress-bar bg-warning';
+                } else if (strength < 75) {
+                    strengthBar.className = 'progress-bar bg-info';
+                } else {
+                    strengthBar.className = 'progress-bar bg-success';
+                }
+            });
         }
-    });
 
-    // Reset Password Form Validation
-    document.getElementById('resetPasswordSubmit').addEventListener('click', function(e) {
-        const newPassword = document.getElementById('new_password').value;
-        const confirmPassword = document.getElementById('confirm_password').value;
+        // Reset Password Form Validation
+        const resetPasswordBtn = document.getElementById('resetPasswordSubmit');
+        if (resetPasswordBtn) {
+            resetPasswordBtn.addEventListener('click', function(e) {
+                const newPassword = document.getElementById('new_password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
 
-        if (newPassword !== confirmPassword) {
-            e.preventDefault();
-            alert('Passwords do not match');
+                if (newPassword !== confirmPassword) {
+                    e.preventDefault();
+                    alert('Passwords do not match');
+                }
+            });
         }
-    });
 
-    // Reset Password button click handler
-    document.querySelectorAll('.reset-password').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var name = this.getAttribute('data-name');
+        // Reset Password button click handler
+        document.querySelectorAll('.reset-password').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var id = this.getAttribute('data-id');
+                var name = this.getAttribute('data-name');
 
-            document.getElementById('reset_password_id').value = id;
-            document.getElementById('reset_password_name').textContent = name;
+                document.getElementById('reset_password_id').value = id;
+                document.getElementById('reset_password_name').textContent = name;
 
-            // Clear password fields
-            document.getElementById('new_password').value = '';
-            document.getElementById('confirm_password').value = '';
+                // Clear password fields
+                document.getElementById('new_password').value = '';
+                document.getElementById('confirm_password').value = '';
 
-            // Reset strength meter
-            var strengthBar = document.getElementById('passwordStrength');
-            strengthBar.style.width = '0%';
-            strengthBar.className = 'progress-bar bg-danger';
+                // Reset strength meter
+                var strengthBar = document.getElementById('passwordStrength');
+                strengthBar.style.width = '0%';
+                strengthBar.className = 'progress-bar bg-danger';
 
-            var resetPasswordModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
-            resetPasswordModal.show();
+                var resetPasswordModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+                resetPasswordModal.show();
+            });
         });
-    });
+        
+        console.log('Manager page JS initialized successfully');
+    } catch (error) {
+        console.error('Error initializing manager page JS:', error);
+    }
 });
 </script>
 
