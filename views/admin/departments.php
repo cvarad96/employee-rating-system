@@ -57,21 +57,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['message_type'] = 'success';
                 } else {
                     $_SESSION['message'] = 'Failed to update department. Name may already exist.';
-                    $_SESSION['message_type'] = 'danger';
-                }
-            }
-            
-        } elseif ($_POST['action'] === 'delete_department') {
-            $id = $_POST['id'];
-            
-            if ($department->delete($id, $_SESSION['user_id'])) { // Add deleter ID for audit
-                $_SESSION['message'] = 'Department deleted successfully';
-                $_SESSION['message_type'] = 'success';
-            } else {
-                $_SESSION['message'] = 'Failed to delete department. It may still have teams or parameters assigned.';
-                $_SESSION['message_type'] = 'danger';
-            }
-        }
+		    $_SESSION['message_type'] = 'danger';
+		}
+	    }
+
+	} elseif ($_POST['action'] === 'delete_department') {
+		$id = $_POST['id'];
+
+		if ($department->delete($id, $_SESSION['user_id'])) { // Add deleter ID for audit
+			$_SESSION['message'] = 'Department deleted successfully';
+			$_SESSION['message_type'] = 'success';
+		} else {
+			$_SESSION['message'] = 'Failed to delete department. It may still have teams or parameters assigned.';
+			$_SESSION['message_type'] = 'danger';
+		}
+	}
+
+	elseif ($_POST['action'] === 'add_parameter') {
+		$data = [
+			'department_id' => $_POST['department_id'],
+			'name' => $_POST['name'],
+			'description' => $_POST['description'],
+			'created_by' => $_SESSION['user_id'] // Add creator ID for audit
+		];
+
+		if ($department->addParameter($data)) {
+			$_SESSION['message'] = 'Parameter added successfully';
+			$_SESSION['message_type'] = 'success';
+		} else {
+			$_SESSION['message'] = 'Failed to add parameter';
+			$_SESSION['message_type'] = 'danger';
+		}
+
+	} elseif ($_POST['action'] === 'edit_parameter') {
+		$data = [
+			'id' => $_POST['id'],
+			'name' => $_POST['name'],
+			'description' => $_POST['description'],
+			'updated_by' => $_SESSION['user_id'] // Add updater ID for audit
+		];
+
+		if ($department->updateParameter($data)) {
+			$_SESSION['message'] = 'Parameter updated successfully';
+			$_SESSION['message_type'] = 'success';
+		} else {
+			$_SESSION['message'] = 'Failed to update parameter';
+			$_SESSION['message_type'] = 'danger';
+		}
+
+	} elseif ($_POST['action'] === 'delete_parameter') {
+		$id = $_POST['id'];
+
+		if ($department->deleteParameter($id, $_SESSION['user_id'])) { // Add deleter ID for audit
+			$_SESSION['message'] = 'Parameter deleted successfully';
+			$_SESSION['message_type'] = 'success';
+		} else {
+			$_SESSION['message'] = 'Failed to delete parameter';
+			$_SESSION['message_type'] = 'danger';
+		}
+	}
         
         // Rest of the code...
     }
