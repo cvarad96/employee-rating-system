@@ -286,6 +286,16 @@ include '../../includes/header.php';
     </div>
 </div>
 
+<!-- Loader Overlay -->
+<div id="loader-overlay" class="loader-overlay">
+    <div class="loader-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-primary">Saving ratings...</p>
+    </div>
+</div>
+
 <?php if ($employee_id && $employeeInfo): ?>
     <?php if (empty($parameters)): ?>
         <div class="alert alert-warning" role="alert">
@@ -348,11 +358,6 @@ include '../../includes/header.php';
                                     <div class="d-flex justify-content-between align-items-center mobile-rating-row">
                                         <span class="parameter-name"><?php echo htmlspecialchars($param['name']); ?></span>
                                         <input type="hidden" name="parameter_id[]" value="<?php echo $param['id']; ?>">
-                                        <!-- Hidden field to store comments -->
-                                        <input type="hidden" class="comment-input" 
-                                               name="comment_<?php echo $param['id']; ?>" 
-                                               id="comment_<?php echo $param['id']; ?>"
-                                               value="<?php echo htmlspecialchars($commentValue); ?>">
                                         <div class="rating-group mobile-stars">
                                             <!-- Add zero rating option -->
                                             <div class="form-check form-check-inline m-0 star-item">
@@ -388,15 +393,24 @@ include '../../includes/header.php';
                                             <?php endfor; ?>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Comment field (optional for ratings 1-5, required for rating 0) -->
+                                    <div class="mt-2 comment-container">
+                                        <textarea class="form-control comment-field" 
+                                                 name="comment_<?php echo $param['id']; ?>" 
+                                                 id="comment_<?php echo $param['id']; ?>"
+                                                 rows="2"
+                                                 placeholder="Comments (optional)"><?php echo htmlspecialchars($commentValue); ?></textarea>
+                                    </div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
 
                         <div class="mt-3 d-flex justify-content-between">
-                            <button type="submit" class="btn btn-primary">Save Ratings</button>
+                            <button type="submit" class="btn btn-primary" id="saveRatingsBtn">Save Ratings</button>
 
                             <?php if (isset($nextEmployeeId)): ?>
-                            <button type="submit" name="next_employee" value="<?php echo $nextEmployeeId; ?>" class="btn btn-success">
+                            <button type="submit" name="next_employee" value="<?php echo $nextEmployeeId; ?>" class="btn btn-success" id="saveNextBtn">
                                 Save & Next: <?php echo htmlspecialchars($nextEmployeeName); ?> <i class="bi bi-arrow-right"></i>
                             </button>
                             <?php endif; ?>
@@ -439,18 +453,94 @@ include '../../includes/header.php';
     </div>
 </div>
 
+<style>
+/* Loader styles */
+.loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loader-container {
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.loader-overlay.show {
+    display: flex;
+}
+
+/* Comment field styles */
+.comment-container {
+    display: block;
+    transition: max-height 0.3s ease;
+}
+
+.comment-field {
+    font-size: 0.9rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.comment-field:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.comment-field.required {
+    border-color: #e74a3b;
+}
+
+.comment-field.required:focus {
+    box-shadow: 0 0 0 0.2rem rgba(231, 74, 59, 0.25);
+}
+</style>
+
 <script>
-// Ensure year is updated when week changes
 // Ensure year is updated when week changes
 document.addEventListener('DOMContentLoaded', function() {
     // Form validation
     const ratingForm = document.getElementById('ratingForm');
+    const loaderOverlay = document.getElementById('loader-overlay');
+    
+    // Function to show loader
+    function showLoader() {
+        loaderOverlay.classList.add('show');
+    }
+    
+    // Function to hide loader
+    function hideLoader() {
+        loaderOverlay.classList.remove('show');
+    }
     
     document.getElementById('week').addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         const year = selectedOption.getAttribute('data-year');
         document.getElementById('year').value = year;
     });
+
+    // Setup form submit handlers for loader
+    if (ratingForm) {
+        const formButtons = ratingForm.querySelectorAll('button[type="submit"]');
+        formButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Store which button was clicked if needed
+                if (this.name === 'next_employee') {
+                    ratingForm.setAttribute('data-next-employee', this.value);
+                }
+            });
+        });
+    }
 
     // Zero rating handling
     const zeroRatingModal = new bootstrap.Modal(document.getElementById('zeroRatingModal'), {
@@ -463,6 +553,25 @@ document.addEventListener('DOMContentLoaded', function() {
     let submittedFromModal = false;
     let nextEmployeeClicked = null;
 
+    // Function to mark comment fields as required or optional
+    function updateCommentRequirements() {
+        // First reset all comment fields
+        document.querySelectorAll('.comment-field').forEach(field => {
+            field.classList.remove('required');
+            field.setAttribute('placeholder', 'Comments (optional)');
+        });
+        
+        // Find all parameters with zero ratings and mark their comment fields as required
+        document.querySelectorAll('.rating-input:checked').forEach(function(input) {
+            if (parseInt(input.value) === 0) {
+                const parameterId = input.getAttribute('data-parameter-id');
+                const commentField = document.getElementById(`comment_${parameterId}`);
+                commentField.classList.add('required');
+                commentField.setAttribute('placeholder', 'Justification required for zero rating');
+            }
+        });
+    }
+
     // Function to open modal for zero ratings
     function checkAndShowZeroRatingModal() {
         zeroRatedParameters.clear();
@@ -470,11 +579,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Find all parameters with zero ratings
         document.querySelectorAll('.rating-input:checked').forEach(function(input) {
             if (parseInt(input.value) === 0) {
-                zeroRatedParameters.add(input.getAttribute('data-parameter-id'));
+                const parameterId = input.getAttribute('data-parameter-id');
+                const commentField = document.getElementById(`comment_${parameterId}`);
+                
+                // Only add to zero rated parameters if comment is empty
+                if (!commentField.value.trim()) {
+                    zeroRatedParameters.add(parameterId);
+                }
             }
         });
         
-        // If there are zero ratings, show the modal
+        // If there are zero ratings without comments, show the modal
         if (zeroRatedParameters.size > 0) {
             updateZeroRatingModalContent();
             zeroRatingModal.show();
@@ -531,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 allValid = false;
             } else {
                 textarea.classList.remove('is-invalid');
-                // Update the hidden comment field
+                // Update the visible comment field
                 commentField.value = textarea.value.trim();
             }
         });
@@ -552,6 +667,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     nextInput.name = 'next_employee';
                     nextInput.value = nextEmployeeClicked;
                     document.getElementById('ratingForm').appendChild(nextInput);
+                }
+                
+                // Show loader before submitting
+                showLoader();
+                
+                // Disable form elements to prevent double submission
+                const formElements = document.getElementById('ratingForm').elements;
+                for (let i = 0; i < formElements.length; i++) {
+                    formElements[i].disabled = true;
                 }
                 
                 document.getElementById('ratingForm').submit();
@@ -589,6 +713,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     defaultInput.checked = true;
                 }
             }
+            
+            // Update comment field requirements
+            updateCommentRequirements();
         });
         
         zeroRatingModal.hide();
@@ -614,6 +741,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Mark this as the new previous value
                 this.setAttribute('data-previous-value', 'true');
             }
+            
+            // Update comment field requirements based on rating
+            updateCommentRequirements();
         });
     });
     
@@ -627,13 +757,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 nextEmployeeClicked = null;
             }
             
+            // Show the loader during validation
+            showLoader();
+            
             // Check if there are zero ratings that need comments
             if (checkAndShowZeroRatingModal()) {
                 // Prevent the default form submission
                 event.preventDefault();
                 
+                // Hide the loader during modal input
+                hideLoader();
+                
                 // Flag that we're waiting for modal input
                 window.formSubmitPending = true;
+            } else {
+                // If we don't need to show the modal, disable all form elements to prevent double submission
+                const formElements = ratingForm.elements;
+                for (let i = 0; i < formElements.length; i++) {
+                    formElements[i].disabled = true;
+                }
             }
         });
     }
@@ -644,6 +786,9 @@ document.addEventListener('DOMContentLoaded', function() {
             event.target.classList.remove('is-invalid');
         }
     });
+    
+    // Initialize comment field requirements
+    updateCommentRequirements();
     
     // Enhance star rating system
     const ratingGroups = document.querySelectorAll('.rating-group');
@@ -681,6 +826,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     stars[i].classList.remove('bi-star-fill');
                     stars[i].classList.add('bi-star');
                 }
+                
+                // Update comment field requirements
+                updateCommentRequirements();
             });
         });
         
