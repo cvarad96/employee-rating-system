@@ -198,34 +198,41 @@ class ReportGenerator {
 	    $averageRating = $ratingCount > 0 ? round($totalRating / $ratingCount, 1) : 0;
 
 	    // Create a function to generate star HTML that's compatible with all email clients
-	    /**
-	     * ASCII-only version as a last resort
-	     */
-	    $generateStarsASCII = function($rating) {
+
+	    $generateStars = function($rating) {
 		    $fullStars = floor($rating);
 		    $halfStar = ($rating - $fullStars) >= 0.5;
 		    $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
 
-		    $starsHtml = '<span style="font-family: monospace; font-size: 18px; letter-spacing: 3px;">';
+		    // Create stars using HTML entities with table layout for compatibility
+		    $starsHtml = '<table cellpadding="0" cellspacing="0" border="0" style="display: inline-table;">';
+		    $starsHtml .= '<tr>';
 
-		    // Full stars
+		    // Full stars - using the star character (★)
 		    for ($i = 0; $i < $fullStars; $i++) {
-			    $starsHtml .= '<span style="color: #FFD700;">&#9632;</span>'; // Solid block: ■
+			    $starsHtml .= '<td style="padding: 0 2px;">';
+			    $starsHtml .= '<span style="color: #FFD700; font-size: 20px; font-family: Arial, Helvetica, sans-serif;">&#9733;</span>';
+			    $starsHtml .= '</td>';
 		    }
 
-		    // Half star
+		    // Half star with lighter color
 		    if ($halfStar) {
-			    $starsHtml .= '<span style="color: #FFD700;">&#9632;</span>'; // Also use solid block
+			    $starsHtml .= '<td style="padding: 0 2px;">';
+			    $starsHtml .= '<span style="color: #FFD700; opacity: 0.65; font-size: 20px; font-family: Arial, Helvetica, sans-serif;">&#9733;</span>';
+			    $starsHtml .= '</td>';
 		    }
 
-		    // Empty stars
+		    // Empty stars - using the empty star character (☆)
 		    for ($i = 0; $i < $emptyStars; $i++) {
-			    $starsHtml .= '<span style="color: #D3D3D3;">&#9633;</span>'; // Hollow square: □
+			    $starsHtml .= '<td style="padding: 0 2px;">';
+			    $starsHtml .= '<span style="color: #D3D3D3; font-size: 20px; font-family: Arial, Helvetica, sans-serif;">&#9734;</span>';
+			    $starsHtml .= '</td>';
 		    }
 
-		    $starsHtml .= '</span>';
+		    $starsHtml .= '</tr></table>';
+		    $starsHtml .= ' <span style="color: #666; font-size: 14px;">(' . number_format($rating, 1) . ')</span>';
 
-		    return $starsHtml . ' <span style="color: #666; font-size: 14px;">(' . number_format($rating, 1) . ')</span>';
+		    return $starsHtml;
 	    };
 
 	    // Get color class based on rating
