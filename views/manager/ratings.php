@@ -634,55 +634,50 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle saving comments from modal
     document.getElementById('saveZeroRatingComment').addEventListener('click', function() {
-        let allValid = true;
+    let allValid = true;
+    
+    // Validate all comment fields
+    document.querySelectorAll('.zero-rating-comment').forEach(function(textarea) {
+        const parameterId = textarea.getAttribute('data-parameter-id');
+        const commentField = document.getElementById(`comment_${parameterId}`);
         
-        // Validate all comment fields
-        document.querySelectorAll('.zero-rating-comment').forEach(function(textarea) {
-            const parameterId = textarea.getAttribute('data-parameter-id');
-            const commentField = document.getElementById(`comment_${parameterId}`);
-            
-            if (textarea.value.trim() === '') {
-                textarea.classList.add('is-invalid');
-                allValid = false;
-            } else {
-                textarea.classList.remove('is-invalid');
-                // Update the visible comment field
-                commentField.value = textarea.value.trim();
-            }
-        });
-        
-        if (allValid) {
-            submittedFromModal = true;
-            zeroRatingModal.hide();
-            
-            // If this was triggered from the form submission, submit the form now
-            if (window.formSubmitPending) {
-                window.formSubmitPending = false;
-                
-                // Handle next employee if it was clicked
-                if (nextEmployeeClicked) {
-                    // Create a hidden input for next_employee
-                    const nextInput = document.createElement('input');
-                    nextInput.type = 'hidden';
-                    nextInput.name = 'next_employee';
-                    nextInput.value = nextEmployeeClicked;
-                    document.getElementById('ratingForm').appendChild(nextInput);
-                }
-                
-                // Show loader before submitting
-                showLoader();
-                
-                // Disable form elements to prevent double submission
-                const formElements = document.getElementById('ratingForm').elements;
-                for (let i = 0; i < formElements.length; i++) {
-                    formElements[i].disabled = true;
-                }
-                
-                document.getElementById('ratingForm').submit();
-            }
+        if (textarea.value.trim() === '') {
+            textarea.classList.add('is-invalid');
+            allValid = false;
+        } else {
+            textarea.classList.remove('is-invalid');
+            // Update the visible comment field
+            commentField.value = textarea.value.trim();
         }
     });
     
+    if (allValid) {
+        submittedFromModal = true;
+        zeroRatingModal.hide();
+        
+        // If this was triggered from the form submission, submit the form now
+        if (window.formSubmitPending) {
+            window.formSubmitPending = false;
+            
+            // Handle next employee if it was clicked
+            if (nextEmployeeClicked) {
+                // Create a hidden input for next_employee
+                const nextInput = document.createElement('input');
+                nextInput.type = 'hidden';
+                nextInput.name = 'next_employee';
+                nextInput.value = nextEmployeeClicked;
+                document.getElementById('ratingForm').appendChild(nextInput);
+            }
+            
+            // Show loader before submitting
+            showLoader();
+            
+            // Submit without disabling elements
+            document.getElementById('ratingForm').submit();
+        }
+     }
+    });
+	    
     // Cancel button handler
     document.getElementById('cancelZeroRating').addEventListener('click', function() {
         handleCancelZeroRating();
@@ -770,13 +765,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Flag that we're waiting for modal input
                 window.formSubmitPending = true;
-            } else {
-                // If we don't need to show the modal, disable all form elements to prevent double submission
-                const formElements = ratingForm.elements;
-                for (let i = 0; i < formElements.length; i++) {
-                    formElements[i].disabled = true;
-                }
-            }
+            } 
         });
     }
     

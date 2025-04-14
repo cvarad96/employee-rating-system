@@ -197,25 +197,33 @@ class ReportGenerator {
 	    }
 	    $averageRating = $ratingCount > 0 ? round($totalRating / $ratingCount, 1) : 0;
 
-	    // Create a function to generate star HTML
-	    $generateStars = function($rating) {
+	    // Create a function to generate star HTML that's compatible with all email clients
+	    /**
+	     * ASCII-only version as a last resort
+	     */
+	    $generateStarsASCII = function($rating) {
 		    $fullStars = floor($rating);
 		    $halfStar = ($rating - $fullStars) >= 0.5;
 		    $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
 
-		    $starsHtml = '';
+		    $starsHtml = '<span style="font-family: monospace; font-size: 18px; letter-spacing: 3px;">';
+
 		    // Full stars
 		    for ($i = 0; $i < $fullStars; $i++) {
-			    $starsHtml .= '<span style="color: #FFD700; font-size: 18px;">★</span>';
+			    $starsHtml .= '<span style="color: #FFD700;">&#9632;</span>'; // Solid block: ■
 		    }
-		    // Half star if needed
+
+		    // Half star
 		    if ($halfStar) {
-			    $starsHtml .= '<span style="color: #FFD700; font-size: 18px;">★</span>';
+			    $starsHtml .= '<span style="color: #FFD700;">&#9632;</span>'; // Also use solid block
 		    }
+
 		    // Empty stars
 		    for ($i = 0; $i < $emptyStars; $i++) {
-			    $starsHtml .= '<span style="color: #D3D3D3; font-size: 18px;">★</span>';
+			    $starsHtml .= '<span style="color: #D3D3D3;">&#9633;</span>'; // Hollow square: □
 		    }
+
+		    $starsHtml .= '</span>';
 
 		    return $starsHtml . ' <span style="color: #666; font-size: 14px;">(' . number_format($rating, 1) . ')</span>';
 	    };
