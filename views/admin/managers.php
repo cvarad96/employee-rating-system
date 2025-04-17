@@ -405,97 +405,27 @@ include '../../includes/header.php';
 </div>
 
 <script>
-// Combined JavaScript for the managers page
+// Create a global object to store team data by manager ID
+window.managerTeamsData = {};
+
+<?php foreach ($managers as $manager): ?>
+    window.managerTeamsData[<?php echo $manager['id']; ?>] = [
+        <?php
+        // Get teams for this manager
+        $managerTeams = $team->getByManagerId($manager['id']);
+        foreach ($managerTeams as $t):
+        ?>
+        {
+            name: '<?php echo addslashes(htmlspecialchars($t['name'])); ?>',
+            member_count: <?php echo $t['member_count']; ?>,
+            department_name: '<?php echo addslashes(htmlspecialchars($t['department_name'])); ?>'
+        },
+        <?php endforeach; ?>
+    ];
+<?php endforeach; ?>
+
+// Consolidated event handling using event delegation
 document.addEventListener('DOMContentLoaded', function() {
-    // Edit Manager
-    document.querySelectorAll('.edit-manager').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var username = this.getAttribute('data-username');
-            var email = this.getAttribute('data-email');
-            var firstName = this.getAttribute('data-first-name');
-            var lastName = this.getAttribute('data-last-name');
-            
-            document.getElementById('edit_id').value = id;
-            document.getElementById('edit_username').value = username;
-            document.getElementById('edit_email').value = email;
-            document.getElementById('edit_first_name').value = firstName;
-            document.getElementById('edit_last_name').value = lastName;
-            document.getElementById('edit_password').value = '';
-            
-            var editModal = new bootstrap.Modal(document.getElementById('editManagerModal'));
-            editModal.show();
-        });
-    });
-    
-    // Delete Manager
-    document.querySelectorAll('.delete-manager').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var name = this.getAttribute('data-name');
-            
-            document.getElementById('delete_id').value = id;
-            document.getElementById('delete_name').textContent = name;
-            
-            var deleteModal = new bootstrap.Modal(document.getElementById('deleteManagerModal'));
-            deleteModal.show();
-        });
-    });
-    
-    // View Teams
-    document.querySelectorAll('.view-teams').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var name = this.getAttribute('data-name');
-            
-            document.getElementById('manager_name').textContent = name;
-            
-            // Show loading indicator
-            document.getElementById('teams-loading-indicator').style.display = 'block';
-            
-            // Create team list HTML
-            var teamsHTML = '<div class="list-group">';
-            var hasTeams = false;
-            
-            <?php foreach ($managers as $manager): ?>
-                // For each manager, check if this is the one we want to show teams for
-                if (id == <?php echo $manager['id']; ?>) {
-                    <?php 
-                    // Get teams for this manager
-                    $managerTeams = $team->getByManagerId($manager['id']);
-                    if (!empty($managerTeams)): 
-                    ?>
-                        hasTeams = true;
-                        <?php foreach ($managerTeams as $t): ?>
-                            teamsHTML += '<div class="list-group-item">' +
-                                '<div class="d-flex w-100 justify-content-between">' +
-                                '<h5 class="mb-1"><?php echo htmlspecialchars($t['name']); ?></h5>' +
-                                '<span class="badge bg-primary"><?php echo $t['member_count']; ?> members</span>' +
-                                '</div>' +
-                                '<p class="mb-1">Department: <?php echo htmlspecialchars($t['department_name']); ?></p>' +
-                                '</div>';
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                }
-            <?php endforeach; ?>
-            
-            teamsHTML += '</div>';
-            
-            // Hide loading indicator
-            document.getElementById('teams-loading-indicator').style.display = 'none';
-            
-            // If no teams were found, show a message
-            if (!hasTeams) {
-                teamsHTML = '<div class="alert alert-info">No teams assigned to this manager.</div>';
-            }
-            
-            document.getElementById('teams_list').innerHTML = teamsHTML;
-            
-            var viewTeamsModal = new bootstrap.Modal(document.getElementById('viewTeamsModal'));
-            viewTeamsModal.show();
-        });
-    });
-    
     // Toggle password visibility
     document.querySelectorAll('.toggle-password').forEach(function(button) {
         button.addEventListener('click', function() {
@@ -542,29 +472,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Reset Password button click handler
-    document.querySelectorAll('.reset-password').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var id = this.getAttribute('data-id');
-            var name = this.getAttribute('data-name');
-
-            document.getElementById('reset_password_id').value = id;
-            document.getElementById('reset_password_name').textContent = name;
-
-            // Clear password fields
-            document.getElementById('new_password').value = '';
-            document.getElementById('confirm_password').value = '';
-
-            // Reset strength meter
-            var strengthBar = document.getElementById('passwordStrength');
-            strengthBar.style.width = '0%';
-            strengthBar.className = 'progress-bar bg-danger';
-
-            var resetPasswordModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
-            resetPasswordModal.show();
-        });
-    });
-
     // Reset Password Form Validation
     const resetPasswordForm = document.querySelector('#resetPasswordModal form');
     if (resetPasswordForm) {
@@ -575,6 +482,118 @@ document.addEventListener('DOMContentLoaded', function() {
             if (newPassword !== confirmPassword) {
                 e.preventDefault();
                 alert('Passwords do not match');
+            }
+        });
+    }
+
+    // Use event delegation - attach listeners to the table instead of individual buttons
+    const managersTable = document.getElementById('managersTable');
+    if (managersTable) {
+        managersTable.addEventListener('click', function(event) {
+            // Find the clicked button (or its child element like an icon)
+            let target = event.target;
+
+            // If clicked on an icon inside a button, get the parent button
+            if (target.tagName.toLowerCase() === 'i') {
+                target = target.parentElement;
+            }
+
+            // Continue only if a button was clicked
+            if (target.tagName.toLowerCase() !== 'button') {
+                return;
+            }
+
+            // Edit Manager button handler
+            if (target.classList.contains('edit-manager')) {
+                const id = target.getAttribute('data-id');
+                const username = target.getAttribute('data-username');
+                const email = target.getAttribute('data-email');
+                const firstName = target.getAttribute('data-first-name');
+                const lastName = target.getAttribute('data-last-name');
+
+                document.getElementById('edit_id').value = id;
+                document.getElementById('edit_username').value = username;
+                document.getElementById('edit_email').value = email;
+                document.getElementById('edit_first_name').value = firstName;
+                document.getElementById('edit_last_name').value = lastName;
+                document.getElementById('edit_password').value = '';
+
+                var editModal = new bootstrap.Modal(document.getElementById('editManagerModal'));
+                editModal.show();
+            }
+            // Delete Manager button handler
+            else if (target.classList.contains('delete-manager')) {
+                const id = target.getAttribute('data-id');
+                const name = target.getAttribute('data-name');
+
+                document.getElementById('delete_id').value = id;
+                document.getElementById('delete_name').textContent = name;
+
+                var deleteModal = new bootstrap.Modal(document.getElementById('deleteManagerModal'));
+                deleteModal.show();
+            }
+            // View Teams button handler
+            else if (target.classList.contains('view-teams')) {
+                const id = target.getAttribute('data-id');
+                const name = target.getAttribute('data-name');
+
+                document.getElementById('manager_name').textContent = name;
+
+                // Show loading indicator
+                document.getElementById('teams-loading-indicator').style.display = 'block';
+
+                // Load teams from pre-populated data
+                const managerId = parseInt(id, 10);
+                let teamsHTML = '<div class="list-group">';
+                let hasTeams = false;
+
+                if (window.managerTeamsData[managerId] && window.managerTeamsData[managerId].length > 0) {
+                    hasTeams = true;
+                    window.managerTeamsData[managerId].forEach(team => {
+                        teamsHTML += '<div class="list-group-item">' +
+                            '<div class="d-flex w-100 justify-content-between">' +
+                            '<h5 class="mb-1">' + team.name + '</h5>' +
+                            '<span class="badge bg-primary">' + team.member_count + ' members</span>' +
+                            '</div>' +
+                            '<p class="mb-1">Department: ' + team.department_name + '</p>' +
+                            '</div>';
+                    });
+                }
+
+                teamsHTML += '</div>';
+
+                // Hide loading indicator
+                document.getElementById('teams-loading-indicator').style.display = 'none';
+
+                // If no teams were found, show a message
+                if (!hasTeams) {
+                    teamsHTML = '<div class="alert alert-info">No teams assigned to this manager.</div>';
+                }
+
+                document.getElementById('teams_list').innerHTML = teamsHTML;
+
+                var viewTeamsModal = new bootstrap.Modal(document.getElementById('viewTeamsModal'));
+                viewTeamsModal.show();
+            }
+            // Reset Password button handler
+            else if (target.classList.contains('reset-password')) {
+                const id = target.getAttribute('data-id');
+                const name = target.getAttribute('data-name');
+
+                document.getElementById('reset_password_id').value = id;
+                document.getElementById('reset_password_name').textContent = name;
+
+                // Clear password fields
+                document.getElementById('new_password').value = '';
+                document.getElementById('confirm_password').value = '';
+
+                // Reset strength meter
+                var strengthBar = document.getElementById('passwordStrength');
+                strengthBar.style.width = '0%';
+                strengthBar.className = 'progress-bar bg-danger';
+
+                var resetPasswordModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+                resetPasswordModal.show();
             }
         });
     }
