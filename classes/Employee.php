@@ -29,25 +29,34 @@ class Employee {
     /**
      * Get all employees
      */
-    public function getAll($manager_id = null) {
+    public function getAll($manager_id = null, $includeInactive = false) {
         $sql = "SELECT e.*, 
-                (SELECT t.name FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.employee_id = e.id LIMIT 1) as team_name
-                FROM employees e";
+            (SELECT t.name FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.employee_id = e.id LIMIT 1) as team_name
+            FROM employees e";
         $params = [];
-        
+
         if ($manager_id) {
             $sql = "SELECT e.*, t.name as team_name
-                    FROM employees e
-                    JOIN team_members tm ON e.id = tm.employee_id
-                    JOIN teams t ON tm.team_id = t.id
-                    WHERE t.manager_id = ?";
+                FROM employees e
+                JOIN team_members tm ON e.id = tm.employee_id
+                JOIN teams t ON tm.team_id = t.id
+                WHERE t.manager_id = ?";
             $params[] = $manager_id;
+
+            if (!$includeInactive) {
+                $sql .= " AND e.is_active = 1";
+            }
+        } else {
+            // When not filtering by manager_id, add WHERE clause for is_active
+            if (!$includeInactive) {
+                $sql .= " WHERE e.is_active = 1";
+            }
         }
-        
+
         $sql .= " ORDER BY e.created_at DESC";
-        
+
         return $this->db->resultset($sql, $params);
-    }
+    } 
     
     /**
      * Get employee by ID
@@ -70,6 +79,7 @@ class Employee {
         return $employee;
     }
 
+    
     /**
      * Create new employee or reactivate inactive employee
      */
@@ -432,29 +442,122 @@ class Employee {
         
         return 'Unknown';
     }
-    
+
     /**
      * Get employees by team ID
      */
-    public function getByTeamId($team_id) {
+    public function getByTeamId($team_id, $includeInactive = false) {
         $sql = "SELECT e.* FROM employees e
-                JOIN team_members tm ON e.id = tm.employee_id
-                WHERE tm.team_id = ?
-                ORDER BY e.first_name, e.last_name";
-        
+            JOIN team_members tm ON e.id = tm.employee_id
+            WHERE tm.team_id = ?";
+
+        if (!$includeInactive) {
+            $sql .= " AND e.is_active = 1";
+        }
+
+        $sql .= " ORDER BY e.first_name, e.last_name";
+
         return $this->db->resultset($sql, [$team_id]);
-    }
-    
+    } 
+
     /**
      * Check if employee belongs to manager
      */
     public function belongsToManager($employee_id, $manager_id) {
         $sql = "SELECT COUNT(*) as count FROM team_members tm
-                JOIN teams t ON tm.team_id = t.id
-                WHERE tm.employee_id = ? AND t.manager_id = ?";
-        
+            JOIN teams t ON tm.team_id = t.id
+            JOIN employees e ON tm.employee_id = e.id
+            WHERE tm.employee_id = ? AND t.manager_id = ? AND e.is_active = 1";
+
         $result = $this->db->single($sql, [$employee_id, $manager_id]);
-        
+
         return $result && $result['count'] > 0;
+    }
+
+    /**
+     * Search employees
+     *
+     * @param string $searchTerm The search term to find in employee records
+     * @param int $manager_id Optional manager ID to restrict search to a manager's employees
+     * @param int $team_id Optional team ID to restrict search to a specific team
+     * @return array Array of employee records matching the search criteria
+     */
+    public function search($searchTerm, $manager_id = null, $team_id = null) {
+        $searchTerm = '%' . trim($searchTerm) . '%';
+        $params = [];
+
+        if ($manager_id && $team_id) {
+            // Search within a specific team for a manager
+            $sql = "SELECT e.*, t.name as team_name
+                FROM employees e
+                JOIN team_members tm ON e.id = tm.employee_id
+                JOIN teams t ON tm.team_id = t.id
+                WHERE t.manager_id = ? AND tm.team_id = ? AND e.is_active = 1
+                AND (
+                    e.first_name LIKE ? OR
+                    e.last_name LIKE ? OR
+                    CONCAT(e.first_name, ' ', e.last_name) LIKE ? OR
+                    e.email LIKE ? OR
+                    e.position LIKE ?
+                )
+                ORDER BY e.first_name, e.last_name";
+
+            $params = [$manager_id, $team_id, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
+        }
+        elseif ($manager_id) {
+            // Search all teams for a manager
+            $sql = "SELECT e.*, t.name as team_name
+                FROM employees e
+                JOIN team_members tm ON e.id = tm.employee_id
+                JOIN teams t ON tm.team_id = t.id
+                WHERE t.manager_id = ? AND e.is_active = 1
+                AND (
+                    e.first_name LIKE ? OR
+                    e.last_name LIKE ? OR
+                    CONCAT(e.first_name, ' ', e.last_name) LIKE ? OR
+                    e.email LIKE ? OR
+                    e.position LIKE ?
+                )
+                ORDER BY e.first_name, e.last_name";
+
+            $params = [$manager_id, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
+        }
+        elseif ($team_id) {
+            // Search within a specific team (admin)
+            $sql = "SELECT e.*,
+                (SELECT t.name FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.employee_id = e.id LIMIT 1) as team_name
+                FROM employees e
+                JOIN team_members tm ON e.id = tm.employee_id
+                WHERE tm.team_id = ? AND e.is_active = 1
+                AND (
+                    e.first_name LIKE ? OR
+                    e.last_name LIKE ? OR
+                    CONCAT(e.first_name, ' ', e.last_name) LIKE ? OR
+                    e.email LIKE ? OR
+                    e.position LIKE ?
+                )
+                ORDER BY e.first_name, e.last_name";
+
+            $params = [$team_id, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
+        }
+        else {
+            // Search all employees (admin)
+            $sql = "SELECT e.*,
+                (SELECT t.name FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.employee_id = e.id LIMIT 1) as team_name
+                FROM employees e
+                WHERE e.is_active = 1
+                AND (
+                    e.first_name LIKE ? OR
+                    e.last_name LIKE ? OR
+                    CONCAT(e.first_name, ' ', e.last_name) LIKE ? OR
+                    e.email LIKE ? OR
+                    e.position LIKE ?
+                )
+                ORDER BY e.first_name, e.last_name";
+
+            $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
+        }
+
+        return $this->db->resultset($sql, $params);
     }
 }

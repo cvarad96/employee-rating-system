@@ -519,4 +519,45 @@ class User {
 		}
 	}
 
+    /**
+     * Search users by name, username, or email
+     *
+     * @param string $searchTerm The search term to find in user records
+     * @param string $role Optional role to restrict search to specific user roles
+     * @return array Array of user records matching the search criteria
+     */
+    public function search($searchTerm, $role = null) {
+        $searchTerm = '%' . trim($searchTerm) . '%';
+        $params = [];
+
+        $sql = "SELECT * FROM users WHERE is_active = 1 AND (
+            username LIKE ? OR
+            email LIKE ? OR
+            first_name LIKE ? OR
+            last_name LIKE ? OR
+            CONCAT(first_name, ' ', last_name) LIKE ?
+        )";
+
+        $params = [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm];
+
+        if ($role) {
+            $sql .= " AND role = ?";
+            $params[] = $role;
+        }
+
+        $sql .= " ORDER BY first_name, last_name";
+
+        return $this->db->resultset($sql, $params);
+    }
+
+    /**
+     * Search managers by name, username, or email
+     *
+     * @param string $searchTerm The search term to find in manager records
+     * @return array Array of manager records matching the search criteria
+     */
+    public function searchManagers($searchTerm) {
+        return $this->search($searchTerm, 'manager');
+    }
+
 }

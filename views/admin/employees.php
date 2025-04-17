@@ -25,7 +25,15 @@ $teams = $team->getAll();
 $team_id = isset($_GET['team_id']) ? intval($_GET['team_id']) : null;
 $current_team = null;
 
-if ($team_id) {
+// Get search term if specified
+$searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+// Determine how to retrieve employees based on filters
+if (!empty($searchTerm)) {
+    // If searching, use search method with appropriate filters
+    $employees_list = $employee->search($searchTerm, null, $team_id);
+} else if ($team_id) {
+    // If only filtering by team, get by team ID
     $current_team = $team->getById($team_id);
     $employees_list = $employee->getByTeamId($team_id);
 } else {
@@ -133,22 +141,43 @@ include '../../includes/header.php';
 <div class="mb-4">
     <div class="card shadow">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold">Filter by Team</h6>
+            <h6 class="m-0 font-weight-bold">Filter Employees</h6>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <select id="team_filter" class="form-select" onchange="filterByTeam(this.value)">
-                        <option value="">All Teams</option>
-                        <?php foreach ($teams as $t): ?>
-                            <option value="<?php echo $t['id']; ?>" <?php echo ($team_id == $t['id']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($t['name']); ?> 
-                                (<?php echo $t['member_count']; ?> members)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+            <form method="get" action="" id="employeeFilterForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="team_filter" class="form-label">Team</label>
+                        <select id="team_filter" name="team_id" class="form-select" onchange="document.getElementById('employeeFilterForm').submit()">
+                            <option value="">All Teams</option>
+                            <?php foreach ($teams as $t): ?>
+                                <option value="<?php echo $t['id']; ?>" <?php echo ($team_id == $t['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($t['name']); ?> 
+                                    (<?php echo $t['member_count']; ?> members)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Search</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="search" name="search" 
+                                placeholder="Search by name, email or position" 
+                                value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <a href="employees.php" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 </div>

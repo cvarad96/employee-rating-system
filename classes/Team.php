@@ -44,19 +44,26 @@ class Team {
         return $this->db->resultset($sql);
     }
 
-    /**
-     * Get teams by manager ID
-     */
-    public function getByManagerId($manager_id) {
+   /**
+    * Get teams by manager ID
+    */
+    public function getByManagerId($manager_id, $includeInactive = false) {
         $sql = "SELECT t.*, d.name as department_name,
-                (SELECT COUNT(*) FROM team_members tm WHERE tm.team_id = t.id) as member_count
-                FROM teams t
-                JOIN departments d ON t.department_id = d.id
-                WHERE t.manager_id = ?
-                ORDER BY t.name";
-        
+            (SELECT COUNT(*) FROM team_members tm 
+            JOIN employees e ON tm.employee_id = e.id 
+            WHERE tm.team_id = t.id AND e.is_active = 1) as member_count
+            FROM teams t
+            JOIN departments d ON t.department_id = d.id
+            WHERE t.manager_id = ?";
+
+        if (!$includeInactive) {
+            $sql .= " AND t.is_active = 1";
+        }
+
+        $sql .= " ORDER BY t.name";
+
         return $this->db->resultset($sql, [$manager_id]);
-    }
+    } 
     
     /**
      * Get team by ID
