@@ -308,6 +308,25 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
                                 </a>
                             </li>
                         <?php endif; ?>
+                        <?php if ($isAdmin): ?>
+                            <!-- Admin Menu -->
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo ($current_page == 'hierarchy.php') ? 'active' : ''; ?>" 
+                                   href="<?php echo APP_URL; ?>/views/admin/hierarchy.php">
+                                    <i class="bi bi-diagram-3 me-1"></i>
+                                    Management Hierarchy
+                                </a>
+                            </li>
+                        <?php elseif ($isManager): ?>
+                            <!-- Manager Menu -->
+                            <li class="nav-item">
+                                <a class="nav-link <?php echo ($current_page == 'hierarchy.php') ? 'active' : ''; ?>" 
+                                   href="<?php echo APP_URL; ?>/views/manager/hierarchy.php">
+                                    <i class="bi bi-diagram-3 me-1"></i>
+                                    Hierarchy View
+                                </a>
+                            </li>
+                    <?php endif; ?>
                     </ul>
                 </div>
             </nav>

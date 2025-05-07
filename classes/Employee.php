@@ -8,7 +8,7 @@ require_once __DIR__ . '/AuditLog.php';
 
 class Employee {
     private $db;
-    
+
     // Employee properties
     public $id;
     public $first_name;
@@ -18,14 +18,14 @@ class Employee {
     public $position;
     public $created_by;
     public $created_at;
-    
+
     /**
      * Constructor
      */
     public function __construct() {
         $this->db = Database::getInstance();
     }
-    
+
     /**
      * Get all employees
      */
@@ -57,14 +57,14 @@ class Employee {
 
         return $this->db->resultset($sql, $params);
     } 
-    
+
     /**
      * Get employee by ID
      */
     public function getById($id) {
         $sql = "SELECT * FROM employees WHERE id = ?";
         $employee = $this->db->single($sql, [$id]);
-        
+
         if ($employee) {
             $this->id = $employee['id'];
             $this->first_name = $employee['first_name'];
@@ -75,11 +75,11 @@ class Employee {
             $this->created_by = $employee['created_by'];
             $this->created_at = $employee['created_at'];
         }
-        
+
         return $employee;
     }
 
-    
+
     /**
      * Create new employee or reactivate inactive employee
      */
@@ -188,7 +188,7 @@ class Employee {
             }
         }
     }
-    
+
     /**
      * Update employee
      */
@@ -196,10 +196,10 @@ class Employee {
         // Get current employee data for audit log
         $oldData = $this->getById($data['id']);
         $oldTeam = $this->getTeam($data['id']);
-        
+
         $sql = "UPDATE employees SET first_name = ?, last_name = ?, email = ?, 
-                phone = ?, position = ? WHERE id = ?";
-        
+            phone = ?, position = ? WHERE id = ?";
+
         try {
             $this->db->query($sql, [
                 $data['first_name'],
@@ -209,19 +209,19 @@ class Employee {
                 $data['position'],
                 $data['id']
             ]);
-            
+
             // Update team if team_id is provided
             if (isset($data['team_id']) && $data['team_id']) {
                 $this->updateTeam($data['id'], $data['team_id']);
             }
-            
+
             // Log the action if updated_by is provided
             if (isset($data['updated_by'])) {
                 $auditLog = new AuditLog();
-                
+
                 // Prepare description with important changes
                 $description = "Updated employee: {$data['first_name']} {$data['last_name']}";
-                
+
                 // Note team change if applicable
                 if (isset($data['team_id']) && $oldTeam && $oldTeam['id'] != $data['team_id']) {
                     $newTeamName = 'Unknown';
@@ -230,10 +230,10 @@ class Employee {
                     if ($newTeam) {
                         $newTeamName = $newTeam['name'];
                     }
-                    
+
                     $description .= " (team changed from {$oldTeam['name']} to {$newTeamName})";
                 }
-                
+
                 $auditLog->log(
                     $data['updated_by'],
                     'update',
@@ -258,7 +258,7 @@ class Employee {
                     ])
                 );
             }
-            
+
             return true;
         } catch (PDOException $e) {
             if ($e->getCode() == 23000) {
@@ -311,7 +311,7 @@ class Employee {
             return false;
         }
     } 
-    
+
     /**
      * Add employee to team
      */
@@ -319,7 +319,7 @@ class Employee {
         $sql = "INSERT INTO team_members (team_id, employee_id) VALUES (?, ?)";
         try {
             $this->db->query($sql, [$team_id, $employee_id]);
-            
+
             // Log the action if added_by is provided
             if ($added_by) {
                 $employee = $this->getById($employee_id);
@@ -329,7 +329,7 @@ class Employee {
                 if ($team) {
                     $teamName = $team['name'];
                 }
-                
+
                 $auditLog = new AuditLog();
                 $auditLog->log(
                     $added_by,
@@ -344,7 +344,7 @@ class Employee {
                     ])
                 );
             }
-            
+
             return true;
         } catch (PDOException $e) {
             if ($e->getCode() == 23000) {
@@ -355,26 +355,26 @@ class Employee {
             }
         }
     }
-    
+
     /**
      * Update employee team
      */
     public function updateTeam($employee_id, $team_id, $updated_by = null) {
         // Get current team for audit log
         $oldTeam = $this->getTeam($employee_id);
-        
+
         // First remove from all teams
         $sql1 = "DELETE FROM team_members WHERE employee_id = ?";
-        
+
         // Then add to new team
         $sql2 = "INSERT INTO team_members (team_id, employee_id) VALUES (?, ?)";
-        
+
         try {
             $this->db->beginTransaction();
             $this->db->query($sql1, [$employee_id]);
             $this->db->query($sql2, [$team_id, $employee_id]);
             $this->db->endTransaction();
-            
+
             // Log the action if updated_by is provided
             if ($updated_by) {
                 $employee = $this->getById($employee_id);
@@ -384,14 +384,14 @@ class Employee {
                 if ($team) {
                     $teamName = $team['name'];
                 }
-                
+
                 $description = "Updated team for employee: {$employee['first_name']} {$employee['last_name']}";
                 if ($oldTeam) {
                     $description .= " (changed from {$oldTeam['name']} to {$teamName})";
                 } else {
                     $description .= " (assigned to {$teamName})";
                 }
-                
+
                 $auditLog = new AuditLog();
                 $auditLog->log(
                     $updated_by,
@@ -403,43 +403,43 @@ class Employee {
                     json_encode(['team_id' => $team_id, 'team_name' => $teamName])
                 );
             }
-            
+
             return true;
         } catch (PDOException $e) {
             $this->db->cancelTransaction();
             return false;
         }
     }
-    
+
     /**
      * Get employee's team
      */
     public function getTeam($employee_id) {
         $sql = "SELECT t.* FROM teams t 
-                JOIN team_members tm ON t.id = tm.team_id 
-                WHERE tm.employee_id = ?";
-        
+            JOIN team_members tm ON t.id = tm.team_id 
+            WHERE tm.employee_id = ?";
+
         return $this->db->single($sql, [$employee_id]);
     }
-    
+
     /**
      * Get full name
      */
     public function getFullName() {
         return $this->first_name . ' ' . $this->last_name;
     }
-    
+
     /**
      * Get full name by ID
      */
     public function getFullNameById($id) {
         $sql = "SELECT first_name, last_name FROM employees WHERE id = ?";
         $result = $this->db->single($sql, [$id]);
-        
+
         if ($result) {
             return $result['first_name'] . ' ' . $result['last_name'];
         }
-        
+
         return 'Unknown';
     }
 
@@ -559,5 +559,96 @@ class Employee {
         }
 
         return $this->db->resultset($sql, $params);
+    }
+
+    /**
+     * Get manager user ID for an employee if they are a manager
+     *
+     * @param int $employee_id The employee ID
+     * @return int|null Manager user ID or null if employee is not a manager
+     */
+    public function getManagerUserIdByEmployeeId($employee_id) {
+        $sql = "SELECT u.id FROM users u
+            JOIN employees e ON u.email = e.email
+            WHERE e.id = ? AND u.role = 'manager' AND u.is_active = 1";
+
+        $result = $this->db->single($sql, [$employee_id]);
+        return $result ? $result['id'] : null;
+    }
+
+    /**
+     * Get employee ID for a manager
+     *
+     * @param int $manager_user_id The manager user ID
+     * @return int|null Employee ID or null if not found
+     */
+    public function getEmployeeIdByManagerUserId($manager_user_id) {
+        $sql = "SELECT e.id FROM employees e
+            JOIN users u ON e.email = u.email
+            WHERE u.id = ? AND e.is_active = 1";
+
+        $result = $this->db->single($sql, [$manager_user_id]);
+        return $result ? $result['id'] : null;
+    }
+
+    /**
+     * Get all subordinate manager IDs in the hierarchy
+     *
+     * @param int $manager_employee_id The manager's employee ID
+     * @return array Array of subordinate manager employee IDs
+     */
+    public function getSubordinateManagerIds($manager_employee_id) {
+        $sql = "WITH RECURSIVE subordinates AS (
+            SELECT manager_employee_id
+            FROM manager_hierarchy
+            WHERE reports_to_id = ?
+            UNION ALL
+            SELECT mh.manager_employee_id
+            FROM manager_hierarchy mh
+            JOIN subordinates s ON mh.reports_to_id = s.manager_employee_id
+            )
+            SELECT manager_employee_id FROM subordinates";
+
+        return $this->db->resultset($sql, [$manager_employee_id]);
+    }
+
+    /**
+     * Get all employees under a manager (direct and indirect)
+     *
+     * @param int $manager_id The manager user ID
+     * @return array Array of employees
+     */
+    public function getAllHierarchyEmployees($manager_id) {
+        // Get manager's employee ID
+        $manager_employee_id = $this->getEmployeeIdByManagerUserId($manager_id);
+        if (!$manager_employee_id) {
+            return [];
+        }
+
+        // Get direct reports (team members)
+        $direct_employees = $this->getAll($manager_id);
+
+        // Get subordinate managers
+        $subordinate_managers = $this->getSubordinateManagerIds($manager_employee_id);
+
+        // Get indirect reports
+        $indirect_employees = [];
+        foreach ($subordinate_managers as $sub_manager) {
+            $sub_manager_user_id = $this->getManagerUserIdByEmployeeId($sub_manager['manager_employee_id']);
+            if ($sub_manager_user_id) {
+                $team_employees = $this->getAll($sub_manager_user_id);
+                foreach ($team_employees as $emp) {
+                    // Add a flag to indicate this is an indirect report
+                    $emp['is_indirect'] = true;
+                    $emp['reporting_manager_id'] = $sub_manager_user_id;
+                    $indirect_employees[] = $emp;
+                }
+            }
+        }
+
+        // Combine direct and indirect reports
+        $all_employees = array_merge($direct_employees, $indirect_employees);
+
+        return $all_employees;
     }
 }
