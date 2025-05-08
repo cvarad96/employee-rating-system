@@ -95,6 +95,93 @@ function getWeekOptions($selectedWeek = null) {
 }
 
 /**
+ * Get ALL weeks as options for ratings overview and reports
+ *
+ * @param int|null $selectedWeek The currently selected week
+ * @param int|null $selectedYear The currently selected year (defaults to current year)
+ * @param int|null $weeksToShow Number of weeks to show (null for all available weeks)
+ * @return string HTML options for select element
+ */
+function getAllWeekOptions($selectedWeek = null, $selectedYear = null, $weeksToShow = null) {
+    $currentWeek = getCurrentWeek();
+    $currentYear = getCurrentYear();
+    $selectedYear = $selectedYear ?? $currentYear;
+    $options = '';
+
+    // Generate array of weeks to show
+    $availableWeeks = [];
+
+    // Generate weeks for the current year up to current week
+    $maxWeek = ($selectedYear == $currentYear) ? $currentWeek : 53;
+
+    for ($week = 1; $week <= $maxWeek; $week++) {
+        // Check if this week is valid for the selected year
+        $dateCheck = new DateTime();
+        if (!@$dateCheck->setISODate($selectedYear, $week, 1)) {
+            continue; // Skip invalid week numbers
+        }
+
+        $availableWeeks[] = [
+            'week' => $week,
+            'year' => $selectedYear
+        ];
+    }
+
+    // Also add previous years if needed
+    if ($weeksToShow === null || count($availableWeeks) < $weeksToShow) {
+        // Add previous years (up to 3 years back)
+        for ($prevYear = $currentYear - 1; $prevYear >= $currentYear - 3; $prevYear--) {
+            // Add all weeks for this previous year
+            for ($week = 1; $week <= 53; $week++) {
+                $dateCheck = new DateTime();
+                if (!@$dateCheck->setISODate($prevYear, $week, 1)) {
+                    continue; // Skip invalid week numbers
+                }
+
+                $availableWeeks[] = [
+                    'week' => $week,
+                    'year' => $prevYear
+                ];
+
+                // Stop if we've reached the requested number of weeks
+                if ($weeksToShow !== null && count($availableWeeks) >= $weeksToShow) {
+                    break 2; // Break both loops
+                }
+            }
+        }
+    }
+
+    // Sort from newest to oldest
+    usort($availableWeeks, function($a, $b) {
+        if ($a['year'] != $b['year']) {
+            return $b['year'] - $a['year']; // Sort by year (descending)
+        }
+        return $b['week'] - $a['week']; // Then by week (descending)
+    });
+
+    // Limit number of weeks if specified
+    if ($weeksToShow !== null && count($availableWeeks) > $weeksToShow) {
+        $availableWeeks = array_slice($availableWeeks, 0, $weeksToShow);
+    }
+
+    // Generate options for all available weeks
+    foreach ($availableWeeks as $weekData) {
+        $week = $weekData['week'];
+        $year = $weekData['year'];
+        $selected = ($week == $selectedWeek && $year == $selectedYear) ? 'selected' : '';
+        $weekRange = formatWeekRange($week, $year);
+
+        if ($year == $currentYear) {
+            $options .= "<option value=\"$week\" data-year=\"$year\" $selected>$weekRange</option>";
+        } else {
+            $options .= "<option value=\"$week\" data-year=\"$year\" $selected>$weekRange ($year)</option>";
+        }
+    }
+
+    return $options;
+}
+
+/**
  * Get ALL weeks for the year as options for admin reports
  */
 function getAdminWeekOptions($selectedWeek = null) {

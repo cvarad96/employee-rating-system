@@ -577,72 +577,135 @@ class Employee {
     }
 
     /**
-     * Get employee ID for a manager
+     * Get employee ID for a manager user ID
      *
      * @param int $manager_user_id The manager user ID
      * @return int|null Employee ID or null if not found
      */
     public function getEmployeeIdByManagerUserId($manager_user_id) {
+        // First check if this is a regular manager with employee record
         $sql = "SELECT e.id FROM employees e
-            JOIN users u ON e.email = u.email
-            WHERE u.id = ? AND e.is_active = 1";
+                JOIN users u ON e.email = u.email
+                WHERE u.id = ? AND e.is_active = 1";
 
         $result = $this->db->single($sql, [$manager_user_id]);
-        return $result ? $result['id'] : null;
+        if ($result) {
+            return $result['id'];
+        }
+
+        // Special handling for admin/CEO users who aren't in employees table
+        $sql = "SELECT id, email, first_name, last_name, role FROM users
+                WHERE id = ? AND role = 'admin' AND is_active = 1";
+        $adminUser = $this->db->single($sql, [$manager_user_id]);
+
+        if ($adminUser) {
+            // For admin users, check if we need to create a virtual employee record
+            // or handle them specially in the hierarchy code
+            return -1; // Special marker for admin/CEO users
+        }
+
+        return null;
+    }
+
+    /**
+     * Get employee details by user ID (if exists)
+     *
+     * @param int $user_id The user ID
+     * @return array|bool Employee data or false if not found
+     */
+    public function getEmployeeByUserId($user_id) {
+        $sql = "SELECT e.* FROM employees e
+                JOIN users u ON e.email = u.email
+                WHERE u.id = ? AND e.is_active = 1";
+
+        return $this->db->single($sql, [$user_id]);
+    }
+
+    /**
+     * Get user data with employee info if available
+     *
+     * @param int $user_id The user ID
+     * @return array User data with employee info if available
+     */
+    public function getUserWithEmployeeData($user_id) {
+        // First get the user
+        $sql = "SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.role
+                FROM users u
+                WHERE u.id = ? AND u.is_active = 1";
+
+        $user = $this->db->single($sql, [$user_id]);
+
+        if (!$user) {
+            return false;
+        }
+
+        // Check if this user has an employee record
+        $sql = "SELECT e.* FROM employees e
+                WHERE e.email = ? AND e.is_active = 1";
+
+        $employee = $this->db->single($sql, [$user['email']]);
+
+        if ($employee) {
+            $user['employee_id'] = $employee['id'];
+            $user['position'] = $employee['position'];
+            $user['phone'] = $employee['phone'];
+            $user['is_employee'] = true;
+
+            // Get team information
+            $user['team'] = $this->getTeam($employee['id']);
+        } else {
+            $user['is_employee'] = false;
+        }
+
+        return $user;
     }
 
     /**
      * Get all subordinate manager IDs in the hierarchy
+     * Updated to work with user IDs
      *
-     * @param int $manager_employee_id The manager's employee ID
-     * @return array Array of subordinate manager employee IDs
+     * @param int $manager_id The manager user ID
+     * @return array Array of subordinate manager user IDs
      */
-    public function getSubordinateManagerIds($manager_employee_id) {
+    public function getSubordinateManagerIds($manager_id) {
         $sql = "WITH RECURSIVE subordinates AS (
-            SELECT manager_employee_id
+            SELECT manager_user_id
             FROM manager_hierarchy
-            WHERE reports_to_id = ?
+            WHERE reports_to_user_id = ?
             UNION ALL
-            SELECT mh.manager_employee_id
+            SELECT mh.manager_user_id
             FROM manager_hierarchy mh
-            JOIN subordinates s ON mh.reports_to_id = s.manager_employee_id
+            JOIN subordinates s ON mh.reports_to_user_id = s.manager_user_id
             )
-            SELECT manager_employee_id FROM subordinates";
+            SELECT manager_user_id FROM subordinates";
 
-        return $this->db->resultset($sql, [$manager_employee_id]);
+        return $this->db->resultset($sql, [$manager_id]);
     }
 
     /**
      * Get all employees under a manager (direct and indirect)
+     * Updated to work with user IDs in hierarchy table
      *
      * @param int $manager_id The manager user ID
      * @return array Array of employees
      */
     public function getAllHierarchyEmployees($manager_id) {
-        // Get manager's employee ID
-        $manager_employee_id = $this->getEmployeeIdByManagerUserId($manager_id);
-        if (!$manager_employee_id) {
-            return [];
-        }
-
         // Get direct reports (team members)
         $direct_employees = $this->getAll($manager_id);
 
-        // Get subordinate managers
-        $subordinate_managers = $this->getSubordinateManagerIds($manager_employee_id);
+        // Get subordinate manager IDs from the hierarchy
+        $subordinate_managers = $this->getSubordinateManagerIds($manager_id);
 
         // Get indirect reports
         $indirect_employees = [];
         foreach ($subordinate_managers as $sub_manager) {
-            $sub_manager_user_id = $this->getManagerUserIdByEmployeeId($sub_manager['manager_employee_id']);
-            if ($sub_manager_user_id) {
-                $team_employees = $this->getAll($sub_manager_user_id);
-                foreach ($team_employees as $emp) {
-                    // Add a flag to indicate this is an indirect report
-                    $emp['is_indirect'] = true;
-                    $emp['reporting_manager_id'] = $sub_manager_user_id;
-                    $indirect_employees[] = $emp;
-                }
+            // Important change here: Use manager_user_id instead of manager_employee_id
+            $team_employees = $this->getAll($sub_manager['manager_user_id']);
+            foreach ($team_employees as $emp) {
+                // Add a flag to indicate this is an indirect report
+                $emp['is_indirect'] = true;
+                $emp['reporting_manager_id'] = $sub_manager['manager_user_id'];
+                $indirect_employees[] = $emp;
             }
         }
 
@@ -651,4 +714,5 @@ class Employee {
 
         return $all_employees;
     }
+    
 }

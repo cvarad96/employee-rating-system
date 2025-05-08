@@ -573,4 +573,57 @@ class Rating {
 
         return $this->db->resultset($sql, [$week, $year]);
     }
+    /**
+     * Get all employees under a manager (direct and indirect)
+     * Updated to work with user IDs in hierarchy table
+     *
+     * @param int $manager_id The manager user ID
+     * @return array Array of employees
+     */
+    public function getAllHierarchyEmployees($manager_id) {
+        // Get direct reports (team members)
+        $direct_employees = $this->getAll($manager_id);
+
+        // Get subordinate manager IDs from the hierarchy
+        $subordinate_managers = $this->getSubordinateManagerIds($manager_id);
+
+        // Get indirect reports
+        $indirect_employees = [];
+        foreach ($subordinate_managers as $sub_manager) {
+            $team_employees = $this->getAll($sub_manager['manager_user_id']);
+            foreach ($team_employees as $emp) {
+                // Add a flag to indicate this is an indirect report
+                $emp['is_indirect'] = true;
+                $emp['reporting_manager_id'] = $sub_manager['manager_user_id'];
+                $indirect_employees[] = $emp;
+            }
+        }
+
+        // Combine direct and indirect reports
+        $all_employees = array_merge($direct_employees, $indirect_employees);
+
+        return $all_employees;
+    }
+
+    /**
+     * Get all subordinate manager IDs in the hierarchy
+     * Updated to work with user IDs
+     *
+     * @param int $manager_id The manager user ID
+     * @return array Array of subordinate manager user IDs
+     */
+    public function getSubordinateManagerIds($manager_id) {
+        $sql = "WITH RECURSIVE subordinates AS (
+            SELECT manager_user_id
+            FROM manager_hierarchy
+            WHERE reports_to_user_id = ?
+            UNION ALL
+            SELECT mh.manager_user_id
+            FROM manager_hierarchy mh
+            JOIN subordinates s ON mh.reports_to_user_id = s.manager_user_id
+            )
+            SELECT manager_user_id FROM subordinates";
+
+        return $this->db->resultset($sql, [$manager_id]);
+    }
 }

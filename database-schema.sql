@@ -111,16 +111,16 @@ CREATE TABLE `team_members` (
 DROP TABLE IF EXISTS `manager_hierarchy`;
 CREATE TABLE `manager_hierarchy` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `manager_employee_id` int(11) NOT NULL,
-  `reports_to_id` int(11) DEFAULT NULL,
+  `manager_user_id` int(11) NOT NULL,
+  `reports_to_user_id` int(11) DEFAULT NULL,
   `level` int(11) NOT NULL DEFAULT 1,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
-  UNIQUE KEY `manager_employee_id` (`manager_employee_id`),
-  KEY `reports_to_id` (`reports_to_id`),
-  CONSTRAINT `manager_hierarchy_ibfk_1` FOREIGN KEY (`manager_employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `manager_hierarchy_ibfk_2` FOREIGN KEY (`reports_to_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
+  UNIQUE KEY `manager_user_id` (`manager_user_id`),
+  KEY `reports_to_user_id` (`reports_to_user_id`),
+  CONSTRAINT `manager_hierarchy_ibfk_1` FOREIGN KEY (`manager_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `manager_hierarchy_ibfk_2` FOREIGN KEY (`reports_to_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- -----------------------------------------------------

@@ -111,7 +111,7 @@ include '../../includes/header.php';
                 </div>
             </div>
             <div class="card-footer">
-                <a href="history.php" class="text-warning">Rating History <i class="bi bi-arrow-right"></i></a>
+                <a href="ratings_overview.php" class="text-warning">Rating Overview<i class="bi bi-arrow-right"></i></a>
             </div>
         </div>
     </div>

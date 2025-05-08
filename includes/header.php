@@ -257,6 +257,13 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
                                     Employees
                                 </a>
                             </li>
+                             <li class="nav-item">
+                                <a class="nav-link <?php echo ($current_page == 'hierarchy.php') ? 'active' : ''; ?>" 
+                                   href="<?php echo APP_URL; ?>/views/admin/hierarchy.php">
+                                    <i class="bi bi-diagram-3 me-1"></i>
+                                    Management Hierarchy
+                                </a>
+                            </li>   
                             <li class="nav-item">
                                 <a class="nav-link <?php echo ($current_page == 'reports.php') ? 'active' : ''; ?>" 
                                    href="<?php echo APP_URL; ?>/views/admin/reports.php">
@@ -301,32 +308,13 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link <?php echo ($current_page == 'history.php') ? 'active' : ''; ?>" 
-                                   href="<?php echo APP_URL; ?>/views/manager/history.php">
-                                    <i class="bi bi-clock-history me-1"></i>
-                                    History
+                                <a class="nav-link <?php echo (in_array($current_page, ['ratings_overview.php', 'history.php', 'hierarchy.php'])) ? 'active' : ''; ?>" 
+                                   href="<?php echo APP_URL; ?>/views/manager/ratings_overview.php">
+                                    <i class="bi bi-diagram-3 me-1"></i>
+                                    Ratings Overview
                                 </a>
                             </li>
                         <?php endif; ?>
-                        <?php if ($isAdmin): ?>
-                            <!-- Admin Menu -->
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo ($current_page == 'hierarchy.php') ? 'active' : ''; ?>" 
-                                   href="<?php echo APP_URL; ?>/views/admin/hierarchy.php">
-                                    <i class="bi bi-diagram-3 me-1"></i>
-                                    Management Hierarchy
-                                </a>
-                            </li>
-                        <?php elseif ($isManager): ?>
-                            <!-- Manager Menu -->
-                            <li class="nav-item">
-                                <a class="nav-link <?php echo ($current_page == 'hierarchy.php') ? 'active' : ''; ?>" 
-                                   href="<?php echo APP_URL; ?>/views/manager/hierarchy.php">
-                                    <i class="bi bi-diagram-3 me-1"></i>
-                                    Hierarchy View
-                                </a>
-                            </li>
-                    <?php endif; ?>
                     </ul>
                 </div>
             </nav>

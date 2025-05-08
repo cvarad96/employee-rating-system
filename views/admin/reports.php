@@ -152,7 +152,7 @@ include '../../includes/header.php';
             <div class="col-md-2">
                 <label for="week" class="form-label">Week</label>
                 <select class="form-select" id="week" name="week">
-                    <?php echo getAdminWeekOptions($selectedWeek); ?>
+                <?php echo getAllWeekOptions($selectedWeek, $selectedYear); ?>
                 </select>
             </div>
             
